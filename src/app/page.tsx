@@ -1,65 +1,89 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState } from "react";
+import Header from "@/components/Header";
+import MessagesSection from "@/components/sections/MessagesSection";
+import ComparisonSection from "@/components/sections/ComparisonSection";
+import ObjectionsSection from "@/components/sections/ObjectionsSection";
+import ClosingSection from "@/components/sections/ClosingSection";
+import TipsSection from "@/components/sections/TipsSection";
+import RemarketingSection from "@/components/sections/RemarketingSection";
+import { products } from "@/data/products";
+
+export default function ScriptPage() {
+  const [clientName, setClientName] = useState("");
+  const [productId, setProductId] = useState("imovel");
+  const [creditValue, setCreditValue] = useState("");
+
+  const selectedProduct = products.find((p) => p.id === productId);
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
+    <div className="flex flex-col min-h-screen">
+      <Header clientName={clientName} onNameChange={setClientName} />
+
+      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-5 space-y-4 pb-24">
+        {/* Quick context bar */}
+        <div className="glass-card rounded-xl p-4">
+          <div className="flex flex-wrap items-end gap-3">
+            <div className="flex-1 min-w-[140px]">
+              <label className="text-[10px] text-foreground/40 mb-1.5 block">
+                Produto
+              </label>
+              <div className="flex flex-wrap gap-1.5">
+                {products.map((p) => (
+                  <button
+                    key={p.id}
+                    onClick={() => setProductId(p.id)}
+                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center gap-1 ${
+                      productId === p.id
+                        ? "bg-gold/20 text-gold border border-gold/40"
+                        : "bg-navy-medium border border-foreground/8 text-foreground/40 hover:text-foreground/60 hover:border-foreground/15"
+                    }`}
+                  >
+                    <span className="text-xs">{p.emoji}</span>
+                    {p.name}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="w-36">
+              <label className="text-[10px] text-foreground/40 mb-1.5 block">
+                Valor pedido
+              </label>
+              <input
+                type="text"
+                value={creditValue}
+                onChange={(e) => setCreditValue(e.target.value)}
+                placeholder="R$ 100.000"
+                className="w-full bg-navy-medium border border-foreground/10 rounded-lg px-3 py-1.5 text-xs focus:border-gold/40 focus:outline-none transition-colors placeholder:text-foreground/20"
+              />
+            </div>
+          </div>
+        </div>
+
+        <MessagesSection
+          clientName={clientName}
+          product={selectedProduct?.name || ""}
+          value={creditValue}
         />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
+
+        <ComparisonSection productId={productId} clientName={clientName} />
+
+        <ObjectionsSection />
+
+        <ClosingSection clientName={clientName} />
+
+        <TipsSection />
+
+        <div className="text-center py-4">
+          <p className="text-[10px] text-foreground/20">
+            La Costa Consórcios — Parceiros Servopa e Rodobens
           </p>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
       </main>
+
+      <RemarketingSection clientName={clientName} />
     </div>
   );
 }
