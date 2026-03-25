@@ -13,9 +13,8 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "La Costa Consórcios | Script de Vendas",
-  description:
-    "Script interativo de vendas - La Costa Consórcios. Parceiros Servopa e Rodobens.",
+  title: "La Costa | Script de Vendas",
+  description: "Assistente de vendas inteligente — La Costa Consórcios",
 };
 
 export default function RootLayout({
@@ -28,9 +27,7 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-navy text-foreground">
-        {children}
-      </body>
+      <body className="h-full">{children}</body>
     </html>
   );
 }

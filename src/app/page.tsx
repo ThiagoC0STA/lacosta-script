@@ -1,89 +1,116 @@
 "use client";
 
-import { useState } from "react";
-import Header from "@/components/Header";
-import MessagesSection from "@/components/sections/MessagesSection";
-import ComparisonSection from "@/components/sections/ComparisonSection";
-import ObjectionsSection from "@/components/sections/ObjectionsSection";
-import ClosingSection from "@/components/sections/ClosingSection";
-import TipsSection from "@/components/sections/TipsSection";
-import RemarketingSection from "@/components/sections/RemarketingSection";
-import { products } from "@/data/products";
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { createClient } from "@/lib/supabase/client";
+import type { Conversation } from "@/types/database";
+import ChatSidebar from "@/components/chat/ChatSidebar";
+import ChatArea from "@/components/chat/ChatArea";
+import NewConversationModal from "@/components/chat/NewConversationModal";
+import { MessageSquare } from "lucide-react";
 
-export default function ScriptPage() {
-  const [clientName, setClientName] = useState("");
-  const [productId, setProductId] = useState("imovel");
-  const [creditValue, setCreditValue] = useState("");
+export default function HomePage() {
+  const [conversations, setConversations] = useState<Conversation[]>([]);
+  const [activeId, setActiveId] = useState<string | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
+  const router = useRouter();
+  const supabase = createClient();
+  const initialized = useRef(false);
 
-  const selectedProduct = products.find((p) => p.id === productId);
+  const activeConversation = conversations.find((c) => c.id === activeId);
+
+  useEffect(() => {
+    if (initialized.current) return;
+    initialized.current = true;
+
+    supabase
+      .from("conversations")
+      .select("*")
+      .order("updated_at", { ascending: false })
+      .then(({ data }) => {
+        if (data) setConversations(data as Conversation[]);
+      });
+  }, [supabase]);
+
+  const handleCreate = async (clientName: string, productType: string) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({
+        user_id: user.id,
+        client_name: clientName,
+        product_type: productType,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      const conv = data as Conversation;
+      setConversations((prev) => [conv, ...prev]);
+      setActiveId(conv.id);
+    }
+  };
+
+  const handleDelete = async (id: string) => {
+    await supabase.from("conversations").delete().eq("id", id);
+    setConversations((prev) => prev.filter((c) => c.id !== id));
+    if (activeId === id) setActiveId(null);
+  };
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
-    <div className="flex flex-col min-h-screen">
-      <Header clientName={clientName} onNameChange={setClientName} />
+    <div className="flex h-screen overflow-hidden">
+      <ChatSidebar
+        conversations={conversations}
+        activeId={activeId}
+        onSelect={setActiveId}
+        onNewClick={() => setModalOpen(true)}
+        onDelete={handleDelete}
+        onLogout={handleLogout}
+      />
 
-      <main className="flex-1 max-w-5xl mx-auto w-full px-4 py-5 space-y-4 pb-24">
-        {/* Quick context bar */}
-        <div className="glass-card rounded-xl p-4">
-          <div className="flex flex-wrap items-end gap-3">
-            <div className="flex-1 min-w-[140px]">
-              <label className="text-[10px] text-foreground/40 mb-1.5 block">
-                Produto
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {products.map((p) => (
-                  <button
-                    key={p.id}
-                    onClick={() => setProductId(p.id)}
-                    className={`px-2.5 py-1.5 rounded-lg text-[10px] font-medium transition-all flex items-center gap-1 ${
-                      productId === p.id
-                        ? "bg-gold/20 text-gold border border-gold/40"
-                        : "bg-navy-medium border border-foreground/8 text-foreground/40 hover:text-foreground/60 hover:border-foreground/15"
-                    }`}
-                  >
-                    <span className="text-xs">{p.emoji}</span>
-                    {p.name}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="w-36">
-              <label className="text-[10px] text-foreground/40 mb-1.5 block">
-                Valor pedido
-              </label>
-              <input
-                type="text"
-                value={creditValue}
-                onChange={(e) => setCreditValue(e.target.value)}
-                placeholder="R$ 100.000"
-                className="w-full bg-navy-medium border border-foreground/10 rounded-lg px-3 py-1.5 text-xs focus:border-gold/40 focus:outline-none transition-colors placeholder:text-foreground/20"
-              />
-            </div>
-          </div>
-        </div>
-
-        <MessagesSection
-          clientName={clientName}
-          product={selectedProduct?.name || ""}
-          value={creditValue}
+      {activeConversation ? (
+        <ChatArea
+          key={activeConversation.id}
+          conversationId={activeConversation.id}
+          clientName={activeConversation.client_name}
+          productType={activeConversation.product_type}
         />
-
-        <ComparisonSection productId={productId} clientName={clientName} />
-
-        <ObjectionsSection />
-
-        <ClosingSection clientName={clientName} />
-
-        <TipsSection />
-
-        <div className="text-center py-4">
-          <p className="text-[10px] text-foreground/20">
-            La Costa Consórcios — Parceiros Servopa e Rodobens
+      ) : (
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-4 bg-bg-primary">
+          <div className="w-14 h-14 rounded-2xl bg-bg-secondary border border-border flex items-center justify-center mb-5">
+            <MessageSquare size={24} className="text-text-muted" />
+          </div>
+          <h2 className="text-base font-semibold text-text-secondary mb-1">
+            Script de Vendas com IA
+          </h2>
+          <p className="text-xs text-text-muted max-w-xs leading-relaxed">
+            Crie uma nova conversa para começar. A IA vai gerar opções de
+            resposta para cada mensagem do cliente.
           </p>
+          <button
+            onClick={() => setModalOpen(true)}
+            className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium bg-accent text-bg-primary hover:bg-accent-hover transition-colors"
+          >
+            Nova conversa
+          </button>
         </div>
-      </main>
+      )}
 
-      <RemarketingSection clientName={clientName} />
+      <NewConversationModal
+        open={modalOpen}
+        onClose={() => setModalOpen(false)}
+        onCreate={handleCreate}
+      />
     </div>
   );
 }
