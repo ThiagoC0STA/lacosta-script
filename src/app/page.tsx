@@ -3,7 +3,7 @@
 import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
-import type { Conversation } from "@/types/database";
+import type { Conversation, ConversationStatus } from "@/types/database";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import NewConversationModal from "@/components/chat/NewConversationModal";
@@ -61,6 +61,16 @@ export default function HomePage() {
     if (activeId === id) setActiveId(null);
   };
 
+  const handleStatusChange = async (
+    id: string,
+    newStatus: ConversationStatus
+  ) => {
+    await supabase.from("conversations").update({ status: newStatus }).eq("id", id);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
+    );
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
@@ -84,6 +94,8 @@ export default function HomePage() {
           conversationId={activeConversation.id}
           clientName={activeConversation.client_name}
           productType={activeConversation.product_type}
+          status={activeConversation.status || "active"}
+          onStatusChange={handleStatusChange}
         />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-4 bg-bg-primary">

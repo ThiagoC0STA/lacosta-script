@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Plus,
   MessageCircle,
@@ -8,9 +9,12 @@ import {
   X,
   Menu,
   Trash2,
+  RefreshCcw,
+  CheckCircle,
+  Clock,
 } from "lucide-react";
 import { products } from "@/data/products";
-import type { Conversation } from "@/types/database";
+import type { Conversation, ConversationStatus } from "@/types/database";
 
 interface ChatSidebarProps {
   conversations: Conversation[];
@@ -21,6 +25,15 @@ interface ChatSidebarProps {
   onLogout: () => void;
 }
 
+const STATUS_CONFIG: Record<
+  ConversationStatus,
+  { label: string; color: string; bg: string; icon: typeof Clock }
+> = {
+  active: { label: "Ativo", color: "text-accent", bg: "bg-accent/10", icon: Clock },
+  remarketing: { label: "Remarketing", color: "text-amber-400", bg: "bg-amber-400/10", icon: RefreshCcw },
+  closed: { label: "Fechado", color: "text-info", bg: "bg-info/10", icon: CheckCircle },
+};
+
 export default function ChatSidebar({
   conversations,
   activeId,
@@ -30,6 +43,17 @@ export default function ChatSidebar({
   onLogout,
 }: ChatSidebarProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [filter, setFilter] = useState<ConversationStatus | "all">("all");
+  const router = useRouter();
+
+  const remarketingCount = conversations.filter(
+    (c) => (c.status || "active") === "remarketing"
+  ).length;
+
+  const filtered =
+    filter === "all"
+      ? conversations
+      : conversations.filter((c) => (c.status || "active") === filter);
 
   const sidebarContent = (
     <div className="flex flex-col h-full bg-bg-secondary">
@@ -53,7 +77,7 @@ export default function ChatSidebar({
       </div>
 
       {/* New button */}
-      <div className="px-3 pb-3">
+      <div className="px-3 pb-2">
         <button
           onClick={() => {
             onNewClick();
@@ -66,19 +90,47 @@ export default function ChatSidebar({
         </button>
       </div>
 
-      {/* Divider */}
+      {/* Filter pills */}
+      <div className="px-3 pb-2 flex gap-1">
+        {(["all", "active", "remarketing", "closed"] as const).map((f) => {
+          const isAll = f === "all";
+          const count = isAll
+            ? conversations.length
+            : conversations.filter((c) => (c.status || "active") === f).length;
+
+          return (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`flex-1 py-1.5 rounded-lg text-[9px] font-semibold uppercase tracking-wider transition-all ${
+                filter === f
+                  ? "bg-bg-tertiary text-text-primary border border-border-light"
+                  : "text-text-muted hover:text-text-secondary border border-transparent"
+              }`}
+            >
+              {isAll ? "Todos" : STATUS_CONFIG[f].label}
+              {count > 0 && (
+                <span className="ml-0.5 opacity-50">({count})</span>
+              )}
+            </button>
+          );
+        })}
+      </div>
+
       <div className="h-px bg-border mx-3" />
 
       {/* Conversations */}
       <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
-        {conversations.length === 0 && (
+        {filtered.length === 0 && (
           <p className="text-[11px] text-text-muted/50 text-center py-10">
-            Nenhuma conversa
+            {filter === "all" ? "Nenhuma conversa" : "Nenhuma conversa nesse filtro"}
           </p>
         )}
-        {conversations.map((conv) => {
+        {filtered.map((conv) => {
           const product = products.find((p) => p.id === conv.product_type);
           const isActive = activeId === conv.id;
+          const status = conv.status || "active";
+          const statusConf = STATUS_CONFIG[status];
 
           return (
             <div
@@ -95,12 +147,25 @@ export default function ChatSidebar({
             >
               <MessageCircle
                 size={14}
-                className={isActive ? "text-accent shrink-0" : "text-text-muted shrink-0"}
+                className={
+                  isActive ? "text-accent shrink-0" : "text-text-muted shrink-0"
+                }
               />
               <div className="flex-1 min-w-0">
-                <p className="text-[13px] font-medium truncate">
-                  {conv.client_name || "Sem nome"}
-                </p>
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[13px] font-medium truncate">
+                    {conv.client_name || "Sem nome"}
+                  </p>
+                  {status !== "active" && (
+                    <span
+                      className={`shrink-0 w-1.5 h-1.5 rounded-full ${
+                        status === "remarketing"
+                          ? "bg-amber-400"
+                          : "bg-info"
+                      }`}
+                    />
+                  )}
+                </div>
                 <p className="text-[10px] text-text-muted truncate">
                   {product?.emoji} {product?.name}
                 </p>
@@ -119,8 +184,27 @@ export default function ChatSidebar({
         })}
       </div>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-border">
+      {/* Footer: Remarketing CTA + Logout */}
+      <div className="p-3 border-t border-border space-y-2">
+        <button
+          onClick={() => router.push("/remarketing")}
+          className="w-full relative flex items-center gap-2.5 px-3 py-3 rounded-xl text-xs font-semibold transition-all overflow-hidden bg-linear-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 text-amber-300 border border-amber-400/20 hover:border-amber-400/40 hover:from-amber-500/15 hover:via-orange-500/15 hover:to-amber-500/15"
+        >
+          <RefreshCcw
+            size={15}
+            className="animate-[spin_4s_linear_infinite]"
+          />
+          <span>Remarketing</span>
+          {remarketingCount > 0 && (
+            <span className="ml-auto bg-amber-400/20 text-amber-300 text-[10px] font-bold px-2 py-0.5 rounded-full">
+              {remarketingCount}
+            </span>
+          )}
+          {remarketingCount > 0 && (
+            <span className="absolute top-1.5 right-1.5 w-2 h-2 rounded-full bg-amber-400 animate-pulse" />
+          )}
+        </button>
+
         <button
           onClick={onLogout}
           className="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-xs text-text-muted hover:text-text-secondary hover:bg-bg-tertiary transition-colors"
@@ -134,7 +218,6 @@ export default function ChatSidebar({
 
   return (
     <>
-      {/* Mobile toggle */}
       <button
         onClick={() => setMobileOpen(true)}
         className="lg:hidden fixed top-3 left-3 z-40 w-9 h-9 rounded-lg bg-bg-secondary border border-border flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
@@ -142,12 +225,10 @@ export default function ChatSidebar({
         <Menu size={16} />
       </button>
 
-      {/* Desktop */}
       <aside className="hidden lg:flex w-64 border-r border-border flex-col h-screen shrink-0">
         {sidebarContent}
       </aside>
 
-      {/* Mobile overlay */}
       {mobileOpen && (
         <>
           <div
