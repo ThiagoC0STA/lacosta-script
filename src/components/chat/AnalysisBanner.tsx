@@ -1,6 +1,6 @@
 "use client";
 
-import { Lightbulb, AlertTriangle, X } from "lucide-react";
+import { Lightbulb, AlertTriangle, X, FileText } from "lucide-react";
 import { useState } from "react";
 import { motion } from "framer-motion";
 
@@ -39,12 +39,32 @@ export default function AnalysisBanner({ tips, errors }: AnalysisBannerProps) {
               <p className="text-[11px] text-warning/80">{error}</p>
             </div>
           ))}
-          {tips.map((tip, i) => (
-            <div key={`t-${i}`} className="flex items-start gap-2">
-              <Lightbulb size={12} className="text-info mt-0.5 shrink-0" />
-              <p className="text-[11px] text-text-muted">{tip}</p>
-            </div>
-          ))}
+          {tips.map((tip, i) => {
+            const isPdfAlert = tip.includes("HORA DE ENVIAR O PDF");
+            return (
+              <div
+                key={`t-${i}`}
+                className={`flex items-start gap-2 ${
+                  isPdfAlert
+                    ? "bg-accent/10 border border-accent/20 rounded-lg px-2.5 py-2 -mx-1"
+                    : ""
+                }`}
+              >
+                {isPdfAlert ? (
+                  <FileText size={13} className="text-accent mt-0.5 shrink-0" />
+                ) : (
+                  <Lightbulb size={12} className="text-info mt-0.5 shrink-0" />
+                )}
+                <p
+                  className={`text-[11px] ${
+                    isPdfAlert ? "text-accent font-semibold" : "text-text-muted"
+                  }`}
+                >
+                  {tip}
+                </p>
+              </div>
+            );
+          })}
         </div>
       </motion.div>
     </div>

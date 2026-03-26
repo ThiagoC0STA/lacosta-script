@@ -13,6 +13,7 @@ export default function HomePage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [pendingAI, setPendingClientMessage] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
   const initialized = useRef(false);
@@ -32,7 +33,11 @@ export default function HomePage() {
       });
   }, [supabase]);
 
-  const handleCreate = async (clientName: string, productType: string) => {
+  const handleCreate = async (
+    clientName: string,
+    productType: string,
+    clientMessage?: string
+  ) => {
     const {
       data: { user },
     } = await supabase.auth.getUser();
@@ -52,6 +57,17 @@ export default function HomePage() {
       const conv = data as Conversation;
       setConversations((prev) => [conv, ...prev]);
       setActiveId(conv.id);
+
+      if (clientMessage) {
+        await supabase
+          .from("messages")
+          .insert({
+            conversation_id: conv.id,
+            role: "client",
+            content: clientMessage,
+          });
+        setPendingClientMessage(conv.id);
+      }
     }
   };
 
@@ -68,6 +84,16 @@ export default function HomePage() {
     await supabase.from("conversations").update({ status: newStatus }).eq("id", id);
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
+    );
+  };
+
+  const handleClientNameChange = async (id: string, newName: string) => {
+    await supabase
+      .from("conversations")
+      .update({ client_name: newName })
+      .eq("id", id);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, client_name: newName } : c))
     );
   };
 
@@ -96,6 +122,9 @@ export default function HomePage() {
           productType={activeConversation.product_type}
           status={activeConversation.status || "active"}
           onStatusChange={handleStatusChange}
+          onClientNameChange={handleClientNameChange}
+          autoTriggerAI={pendingAI === activeConversation.id}
+          onAutoTriggerDone={() => setPendingClientMessage(null)}
         />
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center text-center px-4 bg-bg-primary">

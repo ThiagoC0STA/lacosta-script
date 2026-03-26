@@ -3,7 +3,9 @@ import OpenAI from "openai";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
-const REMARKETING_PROMPT = `Você é um especialista em remarketing e análise de vendas de consórcio (Servopa/Rodobens - La Costa Consórcios). Sua função é analisar uma conversa entre vendedor e cliente que NÃO fechou negócio e determinar se vale a pena reabordar esse cliente.
+const REMARKETING_PROMPT = `Você é um especialista em remarketing e análise de vendas de consórcio (Servopa/Rodobens, La Costa Consórcios). Sua função é analisar uma conversa entre vendedor e cliente que NÃO fechou negócio e determinar se vale a pena reabordar esse cliente.
+
+REGRA ABSOLUTA: NUNCA use travessão longo ("—" ou "–") em nenhum campo. Use vírgula ou ponto.
 
 Responda APENAS neste JSON:
 {
@@ -119,7 +121,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Empty AI response" }, { status: 500 });
     }
 
-    return NextResponse.json(JSON.parse(content));
+    const sanitized = content.replace(/[—–]/g, ",");
+    return NextResponse.json(JSON.parse(sanitized));
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 500 });

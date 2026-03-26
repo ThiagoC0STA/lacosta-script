@@ -75,12 +75,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const parsed = JSON.parse(content);
+    const sanitized = content.replace(/[—–]/g, ",");
+    const parsed = JSON.parse(sanitized);
+
+    const clean = (arr: unknown[]) =>
+      arr.map((s) => (typeof s === "string" ? s.replace(/[—–]/g, ",") : s));
 
     const response = {
-      versions: Array.isArray(parsed.versions) ? parsed.versions : [],
-      tips: Array.isArray(parsed.tips) ? parsed.tips : [],
-      errors: Array.isArray(parsed.errors) ? parsed.errors : [],
+      versions: Array.isArray(parsed.versions) ? clean(parsed.versions) : [],
+      tips: Array.isArray(parsed.tips) ? clean(parsed.tips) : [],
+      errors: Array.isArray(parsed.errors) ? clean(parsed.errors) : [],
     };
 
     return NextResponse.json(response);

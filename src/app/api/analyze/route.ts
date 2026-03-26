@@ -5,6 +5,8 @@ const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
 
 const ANALYSIS_PROMPT = `Você é um coach de vendas especialista em consórcios no Brasil (Servopa/Rodobens). Analise a conversa entre o vendedor e o cliente e dê um feedback detalhado.
 
+REGRA ABSOLUTA: NUNCA use travessão longo ("—" ou "–") em nenhum campo. Use vírgula ou ponto.
+
 Responda APENAS neste JSON:
 {
   "score": <1-10>,
@@ -73,7 +75,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "Resposta vazia" }, { status: 500 });
     }
 
-    return NextResponse.json(JSON.parse(content));
+    const sanitized = content.replace(/[—–]/g, ",");
+    return NextResponse.json(JSON.parse(sanitized));
   } catch (error) {
     const msg = error instanceof Error ? error.message : "Erro desconhecido";
     return NextResponse.json({ error: msg }, { status: 500 });
