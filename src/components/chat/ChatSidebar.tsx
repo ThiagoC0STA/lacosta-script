@@ -12,6 +12,8 @@ import {
   RefreshCcw,
   CheckCircle,
   Clock,
+  Upload,
+  UserX,
 } from "lucide-react";
 import { products } from "@/data/products";
 import type { Conversation, ConversationStatus } from "@/types/database";
@@ -21,6 +23,7 @@ interface ChatSidebarProps {
   activeId: string | null;
   onSelect: (id: string) => void;
   onNewClick: () => void;
+  onImportClick: () => void;
   onDelete: (id: string) => void;
   onLogout: () => void;
 }
@@ -32,6 +35,7 @@ const STATUS_CONFIG: Record<
   active: { label: "Ativo", color: "text-accent", bg: "bg-accent/10", icon: Clock },
   remarketing: { label: "Remarketing", color: "text-amber-400", bg: "bg-amber-400/10", icon: RefreshCcw },
   closed: { label: "Fechado", color: "text-info", bg: "bg-info/10", icon: CheckCircle },
+  desqualified: { label: "Desqualificado", color: "text-danger", bg: "bg-danger/10", icon: UserX },
 };
 
 export default function ChatSidebar({
@@ -39,6 +43,7 @@ export default function ChatSidebar({
   activeId,
   onSelect,
   onNewClick,
+  onImportClick,
   onDelete,
   onLogout,
 }: ChatSidebarProps) {
@@ -92,7 +97,7 @@ export default function ChatSidebar({
 
       {/* Filter pills */}
       <div className="px-3 pb-2 flex gap-1">
-        {(["all", "active", "remarketing", "closed"] as const).map((f) => {
+        {(["all", "active", "remarketing", "closed", "desqualified"] as const).map((f) => {
           const isAll = f === "all";
           const count = isAll
             ? conversations.length
@@ -131,7 +136,6 @@ export default function ChatSidebar({
           const isActive = activeId === conv.id;
           const status = conv.status || "active";
           const statusConf = STATUS_CONFIG[status];
-
           return (
             <div
               key={conv.id}
@@ -148,7 +152,9 @@ export default function ChatSidebar({
               <MessageCircle
                 size={14}
                 className={
-                  isActive ? "text-accent shrink-0" : "text-text-muted shrink-0"
+                  isActive
+                    ? `${statusConf.color} shrink-0`
+                    : `${statusConf.color} shrink-0 opacity-70`
                 }
               />
               <div className="flex-1 min-w-0">
@@ -161,7 +167,9 @@ export default function ChatSidebar({
                       className={`shrink-0 w-1.5 h-1.5 rounded-full ${
                         status === "remarketing"
                           ? "bg-amber-400"
-                          : "bg-info"
+                          : status === "closed"
+                          ? "bg-info"
+                          : "bg-danger"
                       }`}
                     />
                   )}
@@ -186,8 +194,19 @@ export default function ChatSidebar({
         })}
       </div>
 
-      {/* Footer: Remarketing CTA + Logout */}
+      {/* Footer */}
       <div className="p-3 border-t border-border space-y-2">
+        <button
+          onClick={() => {
+            onImportClick();
+            setMobileOpen(false);
+          }}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-xl text-xs font-medium text-info border border-info/20 bg-info/5 hover:bg-info/10 hover:border-info/30 transition-all"
+        >
+          <Upload size={14} />
+          Importar conversa
+        </button>
+
         <button
           onClick={() => router.push("/remarketing")}
           className="w-full relative flex items-center gap-2.5 px-3 py-3 rounded-xl text-xs font-semibold transition-all overflow-hidden bg-linear-to-r from-amber-500/10 via-orange-500/10 to-amber-500/10 text-amber-300 border border-amber-400/20 hover:border-amber-400/40 hover:from-amber-500/15 hover:via-orange-500/15 hover:to-amber-500/15"
@@ -227,7 +246,7 @@ export default function ChatSidebar({
         <Menu size={16} />
       </button>
 
-      <aside className="hidden lg:flex w-64 border-r border-border flex-col h-screen shrink-0">
+      <aside className="hidden lg:flex w-90 border-r border-border flex-col h-screen shrink-0">
         {sidebarContent}
       </aside>
 
@@ -237,7 +256,7 @@ export default function ChatSidebar({
             className="lg:hidden fixed inset-0 bg-black/50 z-40"
             onClick={() => setMobileOpen(false)}
           />
-          <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-72 z-50 flex flex-col shadow-2xl">
+          <aside className="lg:hidden fixed left-0 top-0 bottom-0 w-80 z-50 flex flex-col shadow-2xl">
             {sidebarContent}
           </aside>
         </>

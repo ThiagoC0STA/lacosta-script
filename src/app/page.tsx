@@ -8,6 +8,7 @@ import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import NewConversationModal from "@/components/chat/NewConversationModal";
 import DeleteConfirmModal from "@/components/chat/DeleteConfirmModal";
+import ImportConversationModal from "@/components/chat/ImportConversationModal";
 import { MessageSquare } from "lucide-react";
 
 export default function HomePage() {
@@ -16,6 +17,7 @@ export default function HomePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingAI, setPendingClientMessage] = useState<string | null>(null);
   const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
+  const [importOpen, setImportOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
   const initialized = useRef(false);
@@ -101,6 +103,47 @@ export default function HomePage() {
     );
   };
 
+  const handleImport = async (
+    clientName: string,
+    productType: string,
+    messages: { role: "client" | "seller"; content: string }[]
+  ) => {
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return;
+
+    const { data, error } = await supabase
+      .from("conversations")
+      .insert({
+        user_id: user.id,
+        client_name: clientName,
+        product_type: productType,
+      })
+      .select()
+      .single();
+
+    if (!error && data) {
+      const conv = data as Conversation;
+
+      const rows = messages.map((m) => ({
+        conversation_id: conv.id,
+        role: m.role,
+        content: m.content,
+      }));
+
+      await supabase.from("messages").insert(rows);
+
+      setConversations((prev) => [conv, ...prev]);
+      setActiveId(conv.id);
+
+      const lastMsg = messages[messages.length - 1];
+      if (lastMsg?.role === "client") {
+        setPendingClientMessage(conv.id);
+      }
+    }
+  };
+
   const handleLogout = async () => {
     await supabase.auth.signOut();
     router.push("/login");
@@ -114,6 +157,7 @@ export default function HomePage() {
         activeId={activeId}
         onSelect={setActiveId}
         onNewClick={() => setModalOpen(true)}
+        onImportClick={() => setImportOpen(true)}
         onDelete={setDeleteTarget}
         onLogout={handleLogout}
       />
@@ -155,6 +199,12 @@ export default function HomePage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreate={handleCreate}
+      />
+
+      <ImportConversationModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImport={handleImport}
       />
 
       <DeleteConfirmModal

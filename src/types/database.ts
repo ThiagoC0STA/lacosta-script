@@ -1,4 +1,8 @@
-export type ConversationStatus = "active" | "remarketing" | "closed";
+export type ConversationStatus =
+  | "active"
+  | "remarketing"
+  | "closed"
+  | "desqualified";
 
 export interface Conversation {
   id: string;

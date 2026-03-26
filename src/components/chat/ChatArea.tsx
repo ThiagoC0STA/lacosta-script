@@ -1,7 +1,15 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { BarChart3, RefreshCcw, CheckCircle, Clock, Pencil, Check } from "lucide-react";
+import {
+  BarChart3,
+  RefreshCcw,
+  CheckCircle,
+  Clock,
+  Pencil,
+  Check,
+  UserX,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Message, AiResponse, ConversationStatus } from "@/types/database";
 import { products } from "@/data/products";
@@ -51,6 +59,13 @@ const STATUS_OPTIONS: {
     icon: CheckCircle,
     color: "text-info",
     activeBg: "bg-info/10 border-info/30",
+  },
+  {
+    value: "desqualified",
+    label: "Desqualificado",
+    icon: UserX,
+    color: "text-danger",
+    activeBg: "bg-danger/10 border-danger/30",
   },
 ];
 
