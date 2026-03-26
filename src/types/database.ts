@@ -32,6 +32,14 @@ export interface AnalysisResponse {
   suggestions: string[];
 }
 
+export interface AiLearning {
+  id: string;
+  user_id: string;
+  insight: string;
+  source: "analysis" | "remarketing" | "manual";
+  created_at: string;
+}
+
 export interface RemarketingAnalysis {
   remarketing_score: number;
   is_good_lead: boolean;

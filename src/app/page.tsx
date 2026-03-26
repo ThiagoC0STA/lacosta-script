@@ -7,6 +7,7 @@ import type { Conversation, ConversationStatus } from "@/types/database";
 import ChatSidebar from "@/components/chat/ChatSidebar";
 import ChatArea from "@/components/chat/ChatArea";
 import NewConversationModal from "@/components/chat/NewConversationModal";
+import DeleteConfirmModal from "@/components/chat/DeleteConfirmModal";
 import { MessageSquare } from "lucide-react";
 
 export default function HomePage() {
@@ -14,6 +15,7 @@ export default function HomePage() {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [pendingAI, setPendingClientMessage] = useState<string | null>(null);
+  const [deleteTarget, setDeleteTarget] = useState<string | null>(null);
   const router = useRouter();
   const supabase = createClient();
   const initialized = useRef(false);
@@ -71,10 +73,12 @@ export default function HomePage() {
     }
   };
 
-  const handleDelete = async (id: string) => {
-    await supabase.from("conversations").delete().eq("id", id);
-    setConversations((prev) => prev.filter((c) => c.id !== id));
-    if (activeId === id) setActiveId(null);
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    await supabase.from("conversations").delete().eq("id", deleteTarget);
+    setConversations((prev) => prev.filter((c) => c.id !== deleteTarget));
+    if (activeId === deleteTarget) setActiveId(null);
+    setDeleteTarget(null);
   };
 
   const handleStatusChange = async (
@@ -110,7 +114,7 @@ export default function HomePage() {
         activeId={activeId}
         onSelect={setActiveId}
         onNewClick={() => setModalOpen(true)}
-        onDelete={handleDelete}
+        onDelete={setDeleteTarget}
         onLogout={handleLogout}
       />
 
@@ -151,6 +155,15 @@ export default function HomePage() {
         open={modalOpen}
         onClose={() => setModalOpen(false)}
         onCreate={handleCreate}
+      />
+
+      <DeleteConfirmModal
+        open={!!deleteTarget}
+        clientName={
+          conversations.find((c) => c.id === deleteTarget)?.client_name || ""
+        }
+        onConfirm={confirmDelete}
+        onCancel={() => setDeleteTarget(null)}
       />
     </div>
   );

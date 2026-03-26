@@ -1,7 +1,16 @@
 "use client";
 
 import { useState } from "react";
-import { X, BarChart3, Trophy, AlertTriangle, Lightbulb, Loader2 } from "lucide-react";
+import {
+  X,
+  BarChart3,
+  Trophy,
+  AlertTriangle,
+  Lightbulb,
+  Loader2,
+  Brain,
+  Check,
+} from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { Message, AnalysisResponse } from "@/types/database";
 
@@ -24,6 +33,10 @@ export default function AnalysisPanel({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [hasLoaded, setHasLoaded] = useState(false);
+  const [learnStatus, setLearnStatus] = useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
+  const [learnedInsights, setLearnedInsights] = useState<string[]>([]);
 
   const loadAnalysis = async () => {
     if (messages.length === 0) {
@@ -57,6 +70,30 @@ export default function AnalysisPanel({
       setError("Erro de conexão");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleLearn = async () => {
+    if (!analysis || learnStatus === "saving") return;
+    setLearnStatus("saving");
+
+    try {
+      const res = await fetch("/api/learnings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ analysis }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setLearnStatus("error");
+        return;
+      }
+
+      setLearnedInsights(data.insights || []);
+      setLearnStatus("saved");
+    } catch {
+      setLearnStatus("error");
     }
   };
 
@@ -218,9 +255,64 @@ export default function AnalysisPanel({
                     </div>
                   )}
 
+                  {/* Learn button */}
+                  {learnStatus === "saved" && learnedInsights.length > 0 ? (
+                    <div className="rounded-xl border border-accent/20 bg-accent/5 p-4">
+                      <div className="flex items-center gap-1.5 mb-2">
+                        <Brain size={13} className="text-accent" />
+                        <p className="text-xs font-semibold text-accent">
+                          Aprendido!
+                        </p>
+                      </div>
+                      <div className="space-y-1.5">
+                        {learnedInsights.map((insight, i) => (
+                          <div
+                            key={i}
+                            className="flex items-start gap-2"
+                          >
+                            <Check
+                              size={11}
+                              className="text-accent mt-0.5 shrink-0"
+                            />
+                            <p className="text-[11px] text-text-secondary leading-relaxed">
+                              {insight}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                      <p className="text-[10px] text-text-muted mt-2">
+                        A IA vai usar esses aprendizados nas próximas conversas.
+                      </p>
+                    </div>
+                  ) : (
+                    <button
+                      onClick={handleLearn}
+                      disabled={learnStatus === "saving"}
+                      className="w-full py-3 rounded-xl text-xs font-semibold border border-accent/30 text-accent bg-accent/5 hover:bg-accent/10 transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+                    >
+                      {learnStatus === "saving" ? (
+                        <>
+                          <Loader2 size={13} className="animate-spin" />
+                          Aprendendo...
+                        </>
+                      ) : learnStatus === "error" ? (
+                        "Erro ao salvar. Tente novamente"
+                      ) : (
+                        <>
+                          <Brain size={13} />
+                          Aprender com esta análise
+                        </>
+                      )}
+                    </button>
+                  )}
+
                   {/* Re-analyze */}
                   <button
-                    onClick={loadAnalysis}
+                    onClick={() => {
+                      setLearnStatus("idle");
+                      setLearnedInsights([]);
+                      loadAnalysis();
+                    }}
                     className="w-full py-2.5 rounded-xl text-xs font-medium border border-border text-text-muted hover:text-text-secondary hover:bg-bg-tertiary transition-colors"
                   >
                     Analisar novamente

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Copy, Sparkles } from "lucide-react";
+import { Check, Pencil, Copy, Sparkles, Send } from "lucide-react";
 import { motion } from "framer-motion";
 
 interface VersionSelectorProps {
@@ -16,6 +16,7 @@ export default function VersionSelector({
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [customMsg, setCustomMsg] = useState("");
 
   const handleEdit = (idx: number) => {
     setEditingIdx(idx);
@@ -51,7 +52,6 @@ export default function VersionSelector({
               transition={{ delay: idx * 0.05 }}
               className="bg-bg-secondary border border-border rounded-xl overflow-hidden hover:border-border-light transition-colors"
             >
-              {/* Header */}
               <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/50">
                 <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
                   v{idx + 1}
@@ -89,7 +89,6 @@ export default function VersionSelector({
                 </div>
               </div>
 
-              {/* Content */}
               <div className="px-3.5 py-3">
                 {editingIdx === idx ? (
                   <textarea
@@ -107,6 +106,39 @@ export default function VersionSelector({
               </div>
             </motion.div>
           ))}
+
+          {/* Custom message input */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: versions.length * 0.05 }}
+            className="bg-bg-secondary border border-dashed border-border rounded-xl overflow-hidden hover:border-border-light transition-colors"
+          >
+            <div className="px-3.5 py-2 border-b border-border/50">
+              <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+                Sua mensagem
+              </span>
+            </div>
+            <div className="p-3.5">
+              <textarea
+                value={customMsg}
+                onChange={(e) => setCustomMsg(e.target.value)}
+                rows={3}
+                placeholder="Escreva sua própria mensagem..."
+                className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/20 resize-none leading-relaxed placeholder:text-text-muted/40 transition-all"
+              />
+              <button
+                onClick={() => {
+                  if (customMsg.trim()) onSelect(customMsg.trim());
+                }}
+                disabled={!customMsg.trim()}
+                className="mt-2 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent/10 text-accent text-[11px] font-semibold hover:bg-accent/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              >
+                <Send size={12} />
+                Enviar minha mensagem
+              </button>
+            </div>
+          </motion.div>
         </div>
       </div>
     </div>

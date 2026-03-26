@@ -1,10 +1,46 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 import { SYSTEM_PROMPT } from "@/data/system-prompt";
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
+
+async function getLearnings(): Promise<string[]> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {},
+        },
+      }
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+      .from("ai_learnings")
+      .select("insight")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    return data?.map((r) => r.insight as string) || [];
+  } catch {
+    return [];
+  }
+}
 
 interface ChatMessage {
   role: "client" | "seller";
@@ -29,10 +65,16 @@ export async function POST(request: NextRequest) {
     const body: RequestBody = await request.json();
     const { messages, productType, clientName } = body;
 
-    const contextMessage = `Contexto atual:
+    const learnings = await getLearnings();
+
+    let contextMessage = `Contexto atual:
 - Nome do cliente: ${clientName || "não informado"}
 - Produto de interesse: ${productType || "não informado"}
 - Total de mensagens na conversa: ${messages.length}`;
+
+    if (learnings.length > 0) {
+      contextMessage += `\n\nAPRENDIZADOS DE CONVERSAS ANTERIORES (aplique esses aprendizados nas respostas):\n${learnings.map((l, i) => `${i + 1}. ${l}`).join("\n")}`;
+    }
 
     const openaiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: "system", content: SYSTEM_PROMPT },
