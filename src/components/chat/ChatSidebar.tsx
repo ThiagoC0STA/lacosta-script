@@ -167,7 +167,9 @@ export default function ChatSidebar({
                   )}
                 </div>
                 <p className="text-[10px] text-text-muted truncate">
-                  {product?.emoji} {product?.name}
+                  {product
+                    ? `${product.emoji} ${product.name}`
+                    : "Produto não definido"}
                 </p>
               </div>
               <button

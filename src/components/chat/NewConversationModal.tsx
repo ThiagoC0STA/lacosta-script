@@ -21,7 +21,7 @@ export default function NewConversationModal({
   onCreate,
 }: NewConversationModalProps) {
   const [name, setName] = useState("");
-  const [product, setProduct] = useState("imovel");
+  const [product, setProduct] = useState("");
   const [clientMessage, setClientMessage] = useState("");
   const inputRef = useRef<HTMLInputElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -29,7 +29,7 @@ export default function NewConversationModal({
   useEffect(() => {
     if (open) {
       setName("");
-      setProduct("imovel");
+      setProduct("");
       setClientMessage("");
       setTimeout(() => inputRef.current?.focus(), 100);
     }
@@ -105,13 +105,25 @@ export default function NewConversationModal({
 
                   <div>
                     <label className="text-xs text-text-muted mb-2 block">
-                      Produto de interesse
+                      Produto de interesse{" "}
+                      <span className="text-text-muted/50">(opcional)</span>
                     </label>
                     <div className="grid grid-cols-2 gap-1.5">
+                      <button
+                        onClick={() => setProduct("")}
+                        className={`px-3 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 justify-center col-span-2 ${
+                          product === ""
+                            ? "bg-info/10 text-info border border-info/30"
+                            : "bg-bg-primary border border-border text-text-secondary hover:border-border-light hover:text-text-primary"
+                        }`}
+                      >
+                        <span>🤷</span>
+                        Ainda não sei / cliente não disse
+                      </button>
                       {products.map((p) => (
                         <button
                           key={p.id}
-                          onClick={() => setProduct(p.id)}
+                          onClick={() => setProduct(product === p.id ? "" : p.id)}
                           className={`px-3 py-2.5 rounded-xl text-xs font-medium transition-all flex items-center gap-1.5 justify-center ${
                             product === p.id
                               ? "bg-accent/10 text-accent border border-accent/30"

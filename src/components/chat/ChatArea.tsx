@@ -95,8 +95,8 @@ export default function ChatArea({
     }
   }, [localName, clientName, conversationId, onClientNameChange]);
 
-  const productName =
-    products.find((p) => p.id === productType)?.name || productType;
+  const productMatch = products.find((p) => p.id === productType);
+  const productName = productMatch?.name || "";
   const displayName = localName || clientName;
 
   const scrollToBottom = () => {
@@ -274,9 +274,16 @@ export default function ChatArea({
                 </button>
               )}
               <p className="text-[11px] text-text-muted truncate">
-                {products.find((p) => p.id === productType)?.emoji}{" "}
-                {productName}
-                {creditValue && ` · ${creditValue}`}
+                {productMatch ? (
+                  <>
+                    {productMatch.emoji} {productName}
+                    {creditValue && ` · ${creditValue}`}
+                  </>
+                ) : (
+                  <span className="text-text-muted/50 italic">
+                    Produto não definido
+                  </span>
+                )}
               </p>
             </div>
 
