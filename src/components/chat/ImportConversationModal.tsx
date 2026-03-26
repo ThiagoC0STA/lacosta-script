@@ -9,6 +9,9 @@ import {
   User,
   Headset,
   AlertCircle,
+  Pencil,
+  Trash2,
+  Check,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { parseWhatsApp, type ParsedMessage } from "@/lib/whatsapp-parser";
@@ -21,7 +24,7 @@ interface ImportConversationModalProps {
     clientName: string,
     productType: string,
     messages: { role: "client" | "seller"; content: string }[]
-  ) => void;
+  ) => Promise<void> | void;
 }
 
 export default function ImportConversationModal({
@@ -34,6 +37,9 @@ export default function ImportConversationModal({
   const [clientName, setClientName] = useState("");
   const [product, setProduct] = useState("");
   const [parseError, setParseError] = useState("");
+  const [editingIdx, setEditingIdx] = useState<number | null>(null);
+  const [editValue, setEditValue] = useState("");
+  const [isImporting, setIsImporting] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
@@ -43,6 +49,9 @@ export default function ImportConversationModal({
       setClientName("");
       setProduct("");
       setParseError("");
+      setEditingIdx(null);
+      setEditValue("");
+      setIsImporting(false);
     }
   }, [open]);
 
@@ -76,14 +85,43 @@ export default function ImportConversationModal({
     }
   };
 
-  const handleImport = () => {
-    if (!parsed || parsed.length === 0) return;
-    onImport(
-      clientName.trim(),
-      product,
-      parsed.map((m) => ({ role: m.role, content: m.content }))
-    );
-    onClose();
+  const handleImport = async () => {
+    if (!parsed || parsed.length === 0 || isImporting) return;
+    setIsImporting(true);
+    try {
+      await onImport(
+        clientName.trim(),
+        product,
+        parsed.map((m) => ({ role: m.role, content: m.content }))
+      );
+      onClose();
+    } finally {
+      setIsImporting(false);
+    }
+  };
+
+  const handleStartEdit = (idx: number, content: string) => {
+    setEditingIdx(idx);
+    setEditValue(content);
+  };
+
+  const handleSaveEdit = () => {
+    if (editingIdx === null || !parsed) return;
+    const next = [...parsed];
+    next[editingIdx] = { ...next[editingIdx], content: editValue.trim() };
+    setParsed(next.filter((m) => m.content.length > 0));
+    setEditingIdx(null);
+    setEditValue("");
+  };
+
+  const handleDeleteMessage = (idx: number) => {
+    if (!parsed) return;
+    const next = parsed.filter((_, i) => i !== idx);
+    setParsed(next);
+    if (editingIdx === idx) {
+      setEditingIdx(null);
+      setEditValue("");
+    }
   };
 
   const clientCount = parsed?.filter((m) => m.role === "client").length ?? 0;
@@ -101,13 +139,13 @@ export default function ImportConversationModal({
             onClick={onClose}
           />
           <motion.div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[90vh] flex flex-col"
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-full max-w-2xl max-h-[95vh] flex flex-col"
             initial={{ opacity: 0, scale: 0.95, y: 10 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 10 }}
             transition={{ duration: 0.15 }}
           >
-            <div className="mx-4 bg-bg-secondary border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            <div className="mx-4 bg-bg-secondary border border-border rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
               {/* Header */}
               <div className="flex items-center justify-between px-6 pt-5 pb-2 shrink-0">
                 <div className="flex items-center gap-2.5">
@@ -148,7 +186,7 @@ export default function ImportConversationModal({
                         ref={textareaRef}
                         value={rawText}
                         onChange={(e) => setRawText(e.target.value)}
-                        rows={10}
+                        rows={12}
                         placeholder={"[14:44, 23/03/2026] +55 12 99131-7968: Olá, vim pelo site...\n[14:54, 23/03/2026] LA COSTA CORRETORA: Boa tarde, tudo bem?"}
                         className="w-full bg-bg-primary border border-border rounded-xl px-4 py-3 text-xs font-mono resize-none focus:border-info/50 focus:outline-none focus:ring-1 focus:ring-info/20 transition-all placeholder:text-text-muted/30 leading-relaxed"
                       />
@@ -225,7 +263,7 @@ export default function ImportConversationModal({
                       <p className="text-[10px] text-text-muted uppercase tracking-wider font-semibold mb-2">
                         Prévia
                       </p>
-                      <div className="bg-bg-primary border border-border rounded-xl p-3 max-h-48 overflow-y-auto space-y-1.5">
+                      <div className="bg-bg-primary border border-border rounded-xl p-3 max-h-72 overflow-y-auto space-y-1.5">
                         {parsed.map((msg, i) => (
                           <div
                             key={i}
@@ -240,13 +278,48 @@ export default function ImportConversationModal({
                                   : "bg-bg-tertiary border border-border"
                               }`}
                             >
-                              <p className="text-[10px] text-text-muted mb-0.5">
-                                {msg.role === "seller" ? "Vendedor" : "Cliente"}{" "}
-                                · {msg.timestamp}
-                              </p>
-                              <p className="text-[11px] text-text-secondary leading-relaxed whitespace-pre-line">
-                                {msg.content}
-                              </p>
+                              <div className="flex items-center justify-between gap-2 mb-1">
+                                <p className="text-[10px] text-text-muted">
+                                  {msg.role === "seller" ? "Vendedor" : "Cliente"} ·{" "}
+                                  {msg.timestamp}
+                                </p>
+                                <div className="flex items-center gap-1">
+                                  {editingIdx === i ? (
+                                    <button
+                                      onClick={handleSaveEdit}
+                                      className="p-1 rounded-md text-accent hover:bg-accent/10 transition-colors"
+                                    >
+                                      <Check size={11} />
+                                    </button>
+                                  ) : (
+                                    <button
+                                      onClick={() => handleStartEdit(i, msg.content)}
+                                      className="p-1 rounded-md text-text-muted hover:text-text-secondary hover:bg-bg-secondary/80 transition-colors"
+                                    >
+                                      <Pencil size={11} />
+                                    </button>
+                                  )}
+                                  <button
+                                    onClick={() => handleDeleteMessage(i)}
+                                    className="p-1 rounded-md text-text-muted hover:text-danger hover:bg-danger/10 transition-colors"
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              </div>
+                              {editingIdx === i ? (
+                                <textarea
+                                  value={editValue}
+                                  onChange={(e) => setEditValue(e.target.value)}
+                                  rows={3}
+                                  className="w-full bg-bg-secondary border border-border rounded-lg px-2.5 py-2 text-[11px] text-text-secondary leading-relaxed resize-none focus:outline-none focus:ring-1 focus:ring-accent/20"
+                                  autoFocus
+                                />
+                              ) : (
+                                <p className="text-[11px] text-text-secondary leading-relaxed whitespace-pre-line">
+                                  {msg.content}
+                                </p>
+                              )}
                             </div>
                           </div>
                         ))}
@@ -287,9 +360,12 @@ export default function ImportConversationModal({
                     </button>
                     <button
                       onClick={handleImport}
-                      className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-accent text-bg-primary hover:bg-accent-hover transition-colors"
+                      disabled={isImporting || parsed.length === 0}
+                      className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-accent text-bg-primary hover:bg-accent-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      Importar {parsed.length} mensagens
+                      {isImporting
+                        ? "Importando..."
+                        : `Importar ${parsed.length} mensagens`}
                     </button>
                   </>
                 )}

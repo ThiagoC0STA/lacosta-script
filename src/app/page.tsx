@@ -11,6 +11,24 @@ import DeleteConfirmModal from "@/components/chat/DeleteConfirmModal";
 import ImportConversationModal from "@/components/chat/ImportConversationModal";
 import { MessageSquare } from "lucide-react";
 
+const STATUS_OVERRIDES_KEY = "conversation-status-overrides";
+
+function readStatusOverrides(): Record<string, ConversationStatus> {
+  if (typeof window === "undefined") return {};
+  try {
+    const raw = window.localStorage.getItem(STATUS_OVERRIDES_KEY);
+    if (!raw) return {};
+    return JSON.parse(raw) as Record<string, ConversationStatus>;
+  } catch {
+    return {};
+  }
+}
+
+function writeStatusOverrides(overrides: Record<string, ConversationStatus>) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(STATUS_OVERRIDES_KEY, JSON.stringify(overrides));
+}
+
 export default function HomePage() {
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
@@ -33,7 +51,13 @@ export default function HomePage() {
       .select("*")
       .order("updated_at", { ascending: false })
       .then(({ data }) => {
-        if (data) setConversations(data as Conversation[]);
+        if (data) {
+          const overrides = readStatusOverrides();
+          const merged = (data as Conversation[]).map((conv) =>
+            overrides[conv.id] ? { ...conv, status: overrides[conv.id] } : conv
+          );
+          setConversations(merged);
+        }
       });
   }, [supabase]);
 
@@ -87,10 +111,35 @@ export default function HomePage() {
     id: string,
     newStatus: ConversationStatus
   ) => {
-    await supabase.from("conversations").update({ status: newStatus }).eq("id", id);
-    setConversations((prev) =>
-      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
-    );
+    const { error } = await supabase
+      .from("conversations")
+      .update({ status: newStatus })
+      .eq("id", id);
+
+    if (!error) {
+      const overrides = readStatusOverrides();
+      if (overrides[id]) {
+        delete overrides[id];
+        writeStatusOverrides(overrides);
+      }
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
+      );
+      return;
+    }
+
+    // Fallback for databases that still don't accept the new enum value.
+    if (newStatus === "desqualified") {
+      const overrides = readStatusOverrides();
+      overrides[id] = "desqualified";
+      writeStatusOverrides(overrides);
+      setConversations((prev) =>
+        prev.map((c) => (c.id === id ? { ...c, status: "desqualified" } : c))
+      );
+      return;
+    }
+
+    alert(`Não foi possível salvar o status: ${error.message}`);
   };
 
   const handleClientNameChange = async (id: string, newName: string) => {
