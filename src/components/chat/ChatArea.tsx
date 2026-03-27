@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
-  BarChart3,
+  PanelRight,
   Pencil,
   Check,
 } from "lucide-react";
@@ -15,9 +15,9 @@ import StarterPicker from "./StarterPicker";
 import VersionSelector from "./VersionSelector";
 import AnalysisBanner from "./AnalysisBanner";
 import LoadingDots from "./LoadingDots";
-import AnalysisPanel from "./AnalysisPanel";
 import StatusDropdown from "./StatusDropdown";
 import ClientAvatar from "@/components/shared/ClientAvatar";
+import ContextPanel from "@/components/context-panel/ContextPanel";
 
 interface ChatAreaProps {
   conversationId: string;
@@ -47,7 +47,7 @@ export default function ChatArea({
   const [creditValue, setCreditValue] = useState("");
   const [parcelaValue, setParcelaValue] = useState("");
   const [error, setError] = useState("");
-  const [showAnalysis, setShowAnalysis] = useState(false);
+  const [showContext, setShowContext] = useState(true);
   const [editingName, setEditingName] = useState(false);
   const [localName, setLocalName] = useState(clientName);
   const nameInputRef = useRef<HTMLInputElement>(null);
@@ -94,7 +94,6 @@ export default function ChatArea({
 
     setAiResponse(null);
     setError("");
-    setShowAnalysis(false);
     autoTriggeredRef.current = false;
 
     supabase
@@ -292,15 +291,15 @@ export default function ChatArea({
               />
 
               <button
-                onClick={() => setShowAnalysis(!showAnalysis)}
+                onClick={() => setShowContext(!showContext)}
                 className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
-                  showAnalysis
+                  showContext
                     ? "bg-bg-tertiary border-border-light text-text-primary"
                     : "border-border text-text-muted hover:text-text-secondary hover:border-border-light"
                 }`}
               >
-                <BarChart3 size={13} />
-                <span className="hidden sm:inline">Analise</span>
+                <PanelRight size={13} />
+                <span className="hidden sm:inline">Contexto</span>
               </button>
             </div>
           </div>
@@ -372,13 +371,14 @@ export default function ChatArea({
         )}
       </div>
 
-      {/* Analysis Panel */}
-      <AnalysisPanel
-        open={showAnalysis}
-        onClose={() => setShowAnalysis(false)}
+      {/* Context Panel */}
+      <ContextPanel
+        open={showContext}
+        onClose={() => setShowContext(false)}
         messages={messages}
         clientName={displayName}
         productType={productName}
+        conversationId={conversationId}
       />
     </div>
   );

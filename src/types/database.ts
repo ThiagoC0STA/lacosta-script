@@ -44,6 +44,25 @@ export interface AiLearning {
   created_at: string;
 }
 
+export interface ClientIntelligence {
+  stage: 1 | 2 | 3 | 4 | 5;
+  stageLabel: string;
+  temperature: "hot" | "warm" | "cold";
+  summary: string;
+  desires: string[];
+  objections: string[];
+  nextActions: {
+    action: string;
+    priority: "high" | "medium" | "low";
+  }[];
+  keyNumbers: {
+    label: string;
+    value: string;
+  }[];
+  shouldSendPdf: boolean;
+  pdfReason?: string;
+}
+
 export interface RemarketingAnalysis {
   remarketing_score: number;
   is_good_lead: boolean;
