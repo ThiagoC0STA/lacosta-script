@@ -7,6 +7,7 @@ import {
   ShieldAlert,
   StickyNote,
   BarChart3,
+  Calculator,
   PanelRightClose,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
@@ -15,8 +16,9 @@ import IntelligenceTab from "./IntelligenceTab";
 import ObjectionBank from "./ObjectionBank";
 import QuickNotes from "./QuickNotes";
 import AnalysisTab from "./AnalysisTab";
+import SimulatorTab from "./SimulatorTab";
 
-type TabId = "radar" | "objections" | "notes" | "analysis";
+type TabId = "radar" | "objections" | "notes" | "analysis" | "simulator";
 
 interface Tab {
   id: TabId;
@@ -29,6 +31,7 @@ const TABS: Tab[] = [
   { id: "objections", label: "Objecoes", icon: ShieldAlert },
   { id: "notes", label: "Notas", icon: StickyNote },
   { id: "analysis", label: "Analise", icon: BarChart3 },
+  { id: "simulator", label: "Simulador", icon: Calculator },
 ];
 
 interface ContextPanelProps {
@@ -120,12 +123,13 @@ export default function ContextPanel({
                   messages={messages}
                   clientName={clientName}
                   productType={productType}
+                  conversationId={conversationId}
                   isVisible={activeTab === "radar"}
                 />
               )}
               {activeTab === "objections" && <ObjectionBank />}
               {activeTab === "notes" && (
-                <QuickNotes conversationId={conversationId} />
+                <QuickNotes key={conversationId} conversationId={conversationId} />
               )}
               {activeTab === "analysis" && (
                 <AnalysisTab
@@ -135,6 +139,7 @@ export default function ContextPanel({
                   isVisible={activeTab === "analysis"}
                 />
               )}
+              {activeTab === "simulator" && <SimulatorTab />}
             </div>
           </motion.aside>
         </>

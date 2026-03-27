@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Copy, Send } from "lucide-react";
+import { Check, Pencil, Copy, Send, Star } from "lucide-react";
 import { motion } from "framer-motion";
 import AiRefineInput from "@/components/shared/AiRefineInput";
 
@@ -21,6 +21,7 @@ export default function VersionSelector({
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
   const [copiedIdx, setCopiedIdx] = useState<number | null>(null);
+  const [savedIdx, setSavedIdx] = useState<number | null>(null);
   const [customMsg, setCustomMsg] = useState("");
 
   const handleEdit = (idx: number) => {
@@ -36,6 +37,20 @@ export default function VersionSelector({
 
   const handleSelect = (idx: number) => {
     onSelect(editingIdx === idx ? editValue : versions[idx]);
+  };
+
+  const handleFavorite = (text: string, idx: number) => {
+    try {
+      const key = "favorite-messages";
+      const raw = window.localStorage.getItem(key);
+      const favorites: string[] = raw ? JSON.parse(raw) : [];
+      if (!favorites.includes(text)) {
+        favorites.unshift(text);
+        window.localStorage.setItem(key, JSON.stringify(favorites.slice(0, 50)));
+      }
+      setSavedIdx(idx);
+      setTimeout(() => setSavedIdx(null), 2000);
+    } catch { /* ignore */ }
   };
 
   return (
@@ -59,6 +74,17 @@ export default function VersionSelector({
                   Opcao {idx + 1}
                 </span>
                 <div className="flex items-center gap-0.5">
+                  <button
+                    onClick={() => handleFavorite(editingIdx === idx ? editValue : version, idx)}
+                    className={`p-1.5 rounded transition-colors ${
+                      savedIdx === idx
+                        ? "text-amber-400"
+                        : "text-text-muted hover:text-amber-400/70 hover:bg-bg-tertiary"
+                    }`}
+                    title="Salvar como favorita"
+                  >
+                    <Star size={12} fill={savedIdx === idx ? "currentColor" : "none"} />
+                  </button>
                   <button
                     onClick={() => handleCopy(editingIdx === idx ? editValue : version, idx)}
                     className={`p-1.5 rounded text-text-muted transition-colors ${

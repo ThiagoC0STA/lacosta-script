@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import type { Conversation, ConversationStatus } from "@/types/database";
@@ -43,6 +43,15 @@ export default function HomePage() {
   const initialized = useRef(false);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
+
+  const staleCount = useMemo(() => {
+    const threshold = 3 * 86400000;
+    const now = new Date().getTime();
+    return conversations.filter((c) => {
+      const s = c.status || "active";
+      return (s === "active" || s === "remarketing") && now - new Date(c.updated_at).getTime() >= threshold;
+    }).length;
+  }, [conversations]);
 
   useEffect(() => {
     if (initialized.current) return;
@@ -211,6 +220,7 @@ export default function HomePage() {
       <ChatSidebar
         conversations={conversations}
         activeId={activeId}
+        staleCount={staleCount}
         onSelect={setActiveId}
         onNewClick={() => setModalOpen(true)}
         onImportClick={() => setImportOpen(true)}

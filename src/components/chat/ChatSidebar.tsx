@@ -14,6 +14,10 @@ import {
   Filter,
   ChevronDown,
   Brain,
+  LayoutDashboard,
+  AlertTriangle,
+  Swords,
+  MoreHorizontal,
 } from "lucide-react";
 import { products } from "@/data/products";
 import type { Conversation, ConversationStatus } from "@/types/database";
@@ -21,6 +25,7 @@ import type { Conversation, ConversationStatus } from "@/types/database";
 interface ChatSidebarProps {
   conversations: Conversation[];
   activeId: string | null;
+  staleCount?: number;
   onSelect: (id: string) => void;
   onNewClick: () => void;
   onImportClick: () => void;
@@ -28,18 +33,18 @@ interface ChatSidebarProps {
   onLogout: () => void;
 }
 
-const STATUS_DOT: Record<ConversationStatus, string> = {
-  active: "bg-emerald-400",
-  remarketing: "bg-amber-400",
-  closed: "bg-blue-400",
-  desqualified: "bg-red-400",
-};
-
 const STATUS_ACCENT: Record<ConversationStatus, string> = {
   active: "before:bg-emerald-400/80",
   remarketing: "before:bg-amber-400/80",
   closed: "before:bg-blue-400/80",
   desqualified: "before:bg-red-400/80",
+};
+
+const STATUS_DOT: Record<ConversationStatus, string> = {
+  active: "bg-emerald-400",
+  remarketing: "bg-amber-400",
+  closed: "bg-blue-400",
+  desqualified: "bg-red-400",
 };
 
 const STATUS_BADGE: Record<ConversationStatus, string> = {
@@ -77,6 +82,7 @@ function getInitials(name: string): string {
 export default function ChatSidebar({
   conversations,
   activeId,
+  staleCount = 0,
   onSelect,
   onNewClick,
   onImportClick,
@@ -86,8 +92,10 @@ export default function ChatSidebar({
   const [mobileOpen, setMobileOpen] = useState(false);
   const [filter, setFilter] = useState<ConversationStatus | "all">("all");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [moreOpen, setMoreOpen] = useState(false);
   const [search, setSearch] = useState("");
   const filterRef = useRef<HTMLDivElement>(null);
+  const moreRef = useRef<HTMLDivElement>(null);
   const router = useRouter();
 
   const remarketingCount = conversations.filter(
@@ -110,6 +118,9 @@ export default function ChatSidebar({
       if (filterRef.current && !filterRef.current.contains(e.target as Node)) {
         setFilterOpen(false);
       }
+      if (moreRef.current && !moreRef.current.contains(e.target as Node)) {
+        setMoreOpen(false);
+      }
     };
     document.addEventListener("mousedown", handleClick);
     return () => document.removeEventListener("mousedown", handleClick);
@@ -123,7 +134,7 @@ export default function ChatSidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full bg-bg-secondary">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4 flex items-center justify-between border-b border-border/70">
+      <div className="px-4 pt-4 pb-3 flex items-center justify-between border-b border-border/70">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-bg-tertiary border border-border flex items-center justify-center">
             <span className="text-[10px] font-bold text-text-secondary">LC</span>
@@ -142,7 +153,7 @@ export default function ChatSidebar({
       </div>
 
       {/* New conversation */}
-      <div className="px-3 pt-3 pb-3">
+      <div className="px-3 pt-3 pb-2">
         <button
           onClick={() => {
             onNewClick();
@@ -224,10 +235,10 @@ export default function ChatSidebar({
         </div>
       )}
 
-      <div className="h-px bg-border/70 mx-3 mt-1" />
+      <div className="h-px bg-border/70 mx-3" />
 
       {/* Conversations list */}
-      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
+      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-1.5">
         {filtered.length === 0 && (
           <p className="text-xs text-text-muted/40 text-center py-10">
             {search ? "Nenhum resultado" : filter === "all" ? "Nenhuma conversa" : "Nenhuma nesse filtro"}
@@ -240,7 +251,7 @@ export default function ChatSidebar({
           return (
             <div
               key={conv.id}
-              className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all border before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:rounded-full ${
+              className={`group relative flex items-center gap-3 px-3 py-2.5 rounded-xl cursor-pointer transition-all border before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:rounded-full ${
                 STATUS_ACCENT[status]
               } ${
                 isActive
@@ -252,7 +263,6 @@ export default function ChatSidebar({
                 setMobileOpen(false);
               }}
             >
-              {/* Initials avatar */}
               <div className="w-8 h-8 rounded-lg bg-bg-primary border border-border/80 flex items-center justify-center shrink-0">
                 <span className="text-[10px] font-semibold text-text-muted">
                   {getInitials(conv.client_name || "")}
@@ -296,47 +306,102 @@ export default function ChatSidebar({
         })}
       </div>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-border/70 space-y-1.5">
+      {/* Footer - compact icon bar + more menu */}
+      <div className="border-t border-border/70 px-3 py-2.5">
+        {/* Primary: Dashboard (full width) */}
         <button
-          onClick={() => {
-            onImportClick();
-            setMobileOpen(false);
-          }}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-text-secondary border border-border hover:border-border-light hover:bg-bg-tertiary/50 transition-all"
+          onClick={() => router.push("/dashboard")}
+          className="w-full flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs text-text-primary bg-bg-tertiary border border-border-light hover:bg-border/60 transition-all font-medium mb-2"
         >
-          <Upload size={13} />
-          Importar conversa
-        </button>
-
-        <button
-          onClick={() => router.push("/remarketing")}
-          className="w-full relative flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-text-secondary border border-border hover:border-border-light hover:bg-bg-tertiary/50 transition-all"
-        >
-          <RefreshCcw size={13} />
-          <span>Remarketing</span>
-          {remarketingCount > 0 && (
-            <span className="ml-auto text-amber-400 text-[10px] font-semibold">
-              {remarketingCount}
+          <LayoutDashboard size={13} />
+          <span>Dashboard</span>
+          {staleCount > 0 && (
+            <span className="ml-auto flex items-center gap-1 text-[10px] font-semibold text-warning">
+              <AlertTriangle size={10} />
+              {staleCount}
             </span>
           )}
         </button>
 
-        <button
-          onClick={() => router.push("/learnings")}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-text-secondary border border-border hover:border-border-light hover:bg-bg-tertiary/50 transition-all"
-        >
-          <Brain size={13} />
-          Aprendizados da IA
-        </button>
+        {/* Secondary: icon row */}
+        <div className="flex items-center gap-1">
+          <button
+            onClick={() => {
+              onImportClick();
+              setMobileOpen(false);
+            }}
+            title="Importar conversa"
+            className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-lg text-text-muted hover:text-text-secondary hover:bg-bg-tertiary/60 transition-all"
+          >
+            <Upload size={13} />
+            <span className="text-[10px]">Importar</span>
+          </button>
 
-        <button
-          onClick={onLogout}
-          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-text-muted hover:text-text-secondary transition-colors"
-        >
-          <LogOut size={13} />
-          Sair
-        </button>
+          <button
+            onClick={() => router.push("/remarketing")}
+            title="Remarketing"
+            className="flex-1 relative flex items-center justify-center gap-1.5 py-2 rounded-lg text-text-muted hover:text-text-secondary hover:bg-bg-tertiary/60 transition-all"
+          >
+            <RefreshCcw size={13} />
+            <span className="text-[10px]">Remarketing</span>
+            {remarketingCount > 0 && (
+              <span className="absolute -top-0.5 right-2 w-3.5 h-3.5 rounded-full bg-amber-400 text-[8px] font-bold text-black flex items-center justify-center">
+                {remarketingCount}
+              </span>
+            )}
+          </button>
+
+          {/* More menu */}
+          <div ref={moreRef} className="relative">
+            <button
+              onClick={() => setMoreOpen(!moreOpen)}
+              title="Mais opcoes"
+              className={`p-2 rounded-lg transition-all ${
+                moreOpen
+                  ? "text-text-primary bg-bg-tertiary"
+                  : "text-text-muted hover:text-text-secondary hover:bg-bg-tertiary/60"
+              }`}
+            >
+              <MoreHorizontal size={14} />
+            </button>
+
+            {moreOpen && (
+              <div className="absolute bottom-full right-0 mb-1 w-44 rounded-lg border border-border shadow-2xl shadow-black/50 overflow-hidden z-50 bg-[#1a1a1e]">
+                <button
+                  onClick={() => {
+                    router.push("/training");
+                    setMoreOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+                >
+                  <Swords size={13} />
+                  Modo Treino
+                </button>
+                <button
+                  onClick={() => {
+                    router.push("/learnings");
+                    setMoreOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-secondary hover:text-text-primary hover:bg-white/5 transition-colors"
+                >
+                  <Brain size={13} />
+                  Aprendizados da IA
+                </button>
+                <div className="h-px bg-border/50 mx-2" />
+                <button
+                  onClick={() => {
+                    onLogout();
+                    setMoreOpen(false);
+                  }}
+                  className="w-full flex items-center gap-2.5 px-3.5 py-2.5 text-xs text-text-muted hover:text-red-400 hover:bg-white/5 transition-colors"
+                >
+                  <LogOut size={13} />
+                  Sair
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -20,7 +20,31 @@ interface IntelligenceTabProps {
   messages: Message[];
   clientName: string;
   productType: string;
+  conversationId: string;
   isVisible: boolean;
+}
+
+const INTEL_STORAGE_KEY = "conversation-intelligence";
+
+function readSavedIntel(): Record<string, ClientIntelligence> {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(INTEL_STORAGE_KEY) || "{}");
+  } catch { return {}; }
+}
+
+export function getSavedIntel(convId: string): ClientIntelligence | null {
+  return readSavedIntel()[convId] || null;
+}
+
+export function getAllSavedIntel(): Record<string, ClientIntelligence> {
+  return readSavedIntel();
+}
+
+function persistIntel(convId: string, data: ClientIntelligence) {
+  const all = readSavedIntel();
+  all[convId] = data;
+  window.localStorage.setItem(INTEL_STORAGE_KEY, JSON.stringify(all));
 }
 
 const STAGE_LABELS: Record<number, string> = {
@@ -47,13 +71,14 @@ export default function IntelligenceTab({
   messages,
   clientName,
   productType,
+  conversationId,
   isVisible,
 }: IntelligenceTabProps) {
-  const [intel, setIntel] = useState<ClientIntelligence | null>(null);
+  const [intel, setIntel] = useState<ClientIntelligence | null>(() => getSavedIntel(conversationId));
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const lastMsgCount = useRef(0);
-  const hasFetched = useRef(false);
+  const lastMsgCount = useRef(intel ? messages.length : 0);
+  const hasFetched = useRef(!!intel);
 
   const fetchIntel = useCallback(async () => {
     if (messages.length === 0) return;
@@ -77,13 +102,14 @@ export default function IntelligenceTab({
         return;
       }
       setIntel(data);
+      persistIntel(conversationId, data);
       lastMsgCount.current = messages.length;
     } catch {
       setError("Erro de conexao");
     } finally {
       setLoading(false);
     }
-  }, [messages, productType, clientName]);
+  }, [messages, productType, clientName, conversationId]);
 
   useEffect(() => {
     if (!isVisible || messages.length === 0) return;

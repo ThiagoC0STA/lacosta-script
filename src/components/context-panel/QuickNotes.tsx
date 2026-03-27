@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useRef, useCallback } from "react";
 import { Save, Check, StickyNote } from "lucide-react";
 
 const NOTES_KEY = "conversation-notes";
 
-function readAllNotes(): Record<string, string> {
+export function readAllNotes(): Record<string, string> {
   if (typeof window === "undefined") return {};
   try {
     const raw = window.localStorage.getItem(NOTES_KEY);
@@ -25,15 +25,9 @@ interface QuickNotesProps {
 }
 
 export default function QuickNotes({ conversationId }: QuickNotesProps) {
-  const [note, setNote] = useState("");
+  const [note, setNote] = useState(() => readAllNotes()[conversationId] || "");
   const [saved, setSaved] = useState(false);
-  const debounceRef = useRef<ReturnType<typeof setTimeout>>();
-
-  useEffect(() => {
-    const all = readAllNotes();
-    setNote(all[conversationId] || "");
-    setSaved(false);
-  }, [conversationId]);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const persistNote = useCallback(
     (value: string) => {
