@@ -9,7 +9,8 @@ import ChatArea from "@/components/chat/ChatArea";
 import NewConversationModal from "@/components/chat/NewConversationModal";
 import DeleteConfirmModal from "@/components/chat/DeleteConfirmModal";
 import ImportConversationModal from "@/components/chat/ImportConversationModal";
-import { MessageSquare } from "lucide-react";
+import { Plus } from "lucide-react";
+import { useToast } from "@/components/shared/Toast";
 
 const STATUS_OVERRIDES_KEY = "conversation-status-overrides";
 
@@ -38,6 +39,7 @@ export default function HomePage() {
   const [importOpen, setImportOpen] = useState(false);
   const router = useRouter();
   const supabase = createClient();
+  const { toast } = useToast();
   const initialized = useRef(false);
 
   const activeConversation = conversations.find((c) => c.id === activeId);
@@ -101,10 +103,12 @@ export default function HomePage() {
 
   const confirmDelete = async () => {
     if (!deleteTarget) return;
+    const name = conversations.find((c) => c.id === deleteTarget)?.client_name;
     await supabase.from("conversations").delete().eq("id", deleteTarget);
     setConversations((prev) => prev.filter((c) => c.id !== deleteTarget));
     if (activeId === deleteTarget) setActiveId(null);
     setDeleteTarget(null);
+    toast(`Conversa${name ? ` com ${name}` : ""} apagada`);
   };
 
   const handleStatusChange = async (
@@ -116,6 +120,13 @@ export default function HomePage() {
       .update({ status: newStatus })
       .eq("id", id);
 
+    const STATUS_LABELS: Record<ConversationStatus, string> = {
+      active: "Ativo",
+      remarketing: "Remarketing",
+      closed: "Fechado",
+      desqualified: "Desqualificado",
+    };
+
     if (!error) {
       const overrides = readStatusOverrides();
       if (overrides[id]) {
@@ -125,16 +136,17 @@ export default function HomePage() {
       setConversations((prev) =>
         prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
       );
+      toast(`Status alterado para ${STATUS_LABELS[newStatus]}`);
       return;
     }
 
-    // Fallback to localStorage when the DB column doesn't exist yet
     const overrides = readStatusOverrides();
     overrides[id] = newStatus;
     writeStatusOverrides(overrides);
     setConversations((prev) =>
       prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
     );
+    toast(`Status alterado para ${STATUS_LABELS[newStatus]}`);
   };
 
   const handleClientNameChange = async (id: string, newName: string) => {
@@ -219,21 +231,15 @@ export default function HomePage() {
           onAutoTriggerDone={() => setPendingClientMessage(null)}
         />
       ) : (
-        <div className="flex-1 flex flex-col items-center justify-center text-center px-4 bg-bg-primary">
-          <div className="w-14 h-14 rounded-2xl bg-bg-secondary border border-border flex items-center justify-center mb-5">
-            <MessageSquare size={24} className="text-text-muted" />
-          </div>
-          <h2 className="text-base font-semibold text-text-secondary mb-1">
-            Script de Vendas com IA
-          </h2>
-          <p className="text-xs text-text-muted max-w-xs leading-relaxed">
-            Crie uma nova conversa para começar. A IA vai gerar opções de
-            resposta para cada mensagem do cliente.
+        <div className="flex-1 flex flex-col items-center justify-center text-center px-6 bg-bg-primary">
+          <p className="text-sm text-text-muted mb-6">
+            Selecione uma conversa ou crie uma nova.
           </p>
           <button
             onClick={() => setModalOpen(true)}
-            className="mt-5 px-5 py-2.5 rounded-xl text-sm font-medium bg-accent text-bg-primary hover:bg-accent-hover transition-colors"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-lg text-xs font-medium text-text-primary bg-bg-tertiary border border-border hover:border-border-light transition-all"
           >
+            <Plus size={14} />
             Nova conversa
           </button>
         </div>

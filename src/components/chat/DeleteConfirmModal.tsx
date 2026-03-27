@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, X } from "lucide-react";
+import { X } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 
 interface DeleteConfirmModalProps {
@@ -21,55 +21,50 @@ export default function DeleteConfirmModal({
       {open && (
         <>
           <motion.div
-            className="fixed inset-0 bg-black/60 backdrop-blur-sm z-60"
+            className="fixed inset-0 bg-black/60 z-60"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onCancel}
           />
           <motion.div
-            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-full max-w-sm"
-            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+            className="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 z-60 w-full max-w-xs"
+            initial={{ opacity: 0, scale: 0.97, y: 8 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+            exit={{ opacity: 0, scale: 0.97, y: 8 }}
             transition={{ duration: 0.12 }}
           >
-            <div className="mx-4 bg-bg-secondary border border-border rounded-2xl shadow-2xl overflow-hidden">
-              <div className="flex items-center justify-between px-5 pt-5 pb-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-lg bg-danger/10 flex items-center justify-center">
-                    <AlertTriangle size={15} className="text-danger" />
-                  </div>
-                  <h2 className="text-sm font-semibold">Apagar conversa</h2>
-                </div>
+            <div className="mx-4 bg-bg-secondary border border-border rounded-lg shadow-2xl shadow-black/40 overflow-hidden">
+              <div className="flex items-center justify-between px-4 pt-4 pb-1">
+                <h2 className="text-sm font-semibold">Apagar conversa</h2>
                 <button
                   onClick={onCancel}
-                  className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors"
+                  className="w-6 h-6 rounded flex items-center justify-center text-text-muted hover:text-text-primary transition-colors"
                 >
-                  <X size={14} />
+                  <X size={13} />
                 </button>
               </div>
 
-              <div className="px-5 py-4">
-                <p className="text-xs text-text-secondary leading-relaxed">
-                  Tem certeza que quer apagar a conversa com{" "}
-                  <span className="font-semibold text-text-primary">
+              <div className="px-4 py-3">
+                <p className="text-xs text-text-muted leading-relaxed">
+                  Apagar conversa com{" "}
+                  <span className="text-text-secondary">
                     {clientName || "Sem nome"}
                   </span>
-                  ? Todas as mensagens e análises serão perdidas.
+                  ? Esta acao nao pode ser desfeita.
                 </p>
               </div>
 
-              <div className="px-5 pb-5 flex gap-3">
+              <div className="px-4 pb-4 flex gap-2">
                 <button
                   onClick={onCancel}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-medium text-text-muted hover:text-text-secondary hover:bg-bg-tertiary border border-border transition-colors"
+                  className="flex-1 py-2 rounded-lg text-xs text-text-muted border border-border hover:border-border-light transition-colors"
                 >
                   Cancelar
                 </button>
                 <button
                   onClick={onConfirm}
-                  className="flex-1 py-2.5 rounded-xl text-xs font-semibold bg-danger text-white hover:bg-danger/80 transition-colors"
+                  className="flex-1 py-2 rounded-lg text-xs font-medium bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/15 transition-colors"
                 >
                   Apagar
                 </button>

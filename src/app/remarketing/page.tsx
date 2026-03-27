@@ -217,9 +217,9 @@ export default function RemarketingPage() {
         analyzedCount={analyzedCount}
       />
 
-      <div className="flex-1 overflow-hidden flex">
+      <div className="flex-1 overflow-hidden flex flex-col lg:flex-row">
         {/* Conversation list */}
-        <div className="w-full max-w-sm border-r border-border flex flex-col shrink-0">
+        <div className={`w-full lg:max-w-sm border-b lg:border-b-0 lg:border-r border-border flex flex-col shrink-0 ${selectedId ? "hidden lg:flex" : "flex-1"}`}>
           <div className="px-4 py-3 border-b border-border">
             <p className="text-[11px] text-text-muted font-medium uppercase tracking-wider">
               Conversas em remarketing
@@ -255,7 +255,15 @@ export default function RemarketingPage() {
         </div>
 
         {/* Analysis panel */}
-        <div className="flex-1 overflow-y-auto">
+        <div className={`flex-1 overflow-y-auto ${selectedId ? "flex flex-col" : "hidden lg:flex lg:flex-col"}`}>
+          {selectedId && (
+            <button
+              onClick={() => setSelectedId(null)}
+              className="lg:hidden flex items-center gap-2 px-4 py-3 text-xs font-medium text-text-muted hover:text-text-primary border-b border-border transition-colors"
+            >
+              <span>&larr;</span> Voltar para lista
+            </button>
+          )}
           {!selectedId ? (
             <SelectPrompt />
           ) : isAnalyzingSelected ? (

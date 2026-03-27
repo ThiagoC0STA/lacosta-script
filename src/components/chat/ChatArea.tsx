@@ -3,12 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import {
   BarChart3,
-  RefreshCcw,
-  CheckCircle,
-  Clock,
   Pencil,
   Check,
-  UserX,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import type { Message, AiResponse, ConversationStatus } from "@/types/database";
@@ -20,6 +16,8 @@ import VersionSelector from "./VersionSelector";
 import AnalysisBanner from "./AnalysisBanner";
 import LoadingDots from "./LoadingDots";
 import AnalysisPanel from "./AnalysisPanel";
+import StatusDropdown from "./StatusDropdown";
+import ClientAvatar from "@/components/shared/ClientAvatar";
 
 interface ChatAreaProps {
   conversationId: string;
@@ -31,43 +29,6 @@ interface ChatAreaProps {
   autoTriggerAI?: boolean;
   onAutoTriggerDone?: () => void;
 }
-
-const STATUS_OPTIONS: {
-  value: ConversationStatus;
-  label: string;
-  icon: typeof Clock;
-  color: string;
-  activeBg: string;
-}[] = [
-  {
-    value: "active",
-    label: "Ativo",
-    icon: Clock,
-    color: "text-accent",
-    activeBg: "bg-accent/10 border-accent/30",
-  },
-  {
-    value: "remarketing",
-    label: "Remarketing",
-    icon: RefreshCcw,
-    color: "text-amber-400",
-    activeBg: "bg-amber-400/10 border-amber-400/30",
-  },
-  {
-    value: "closed",
-    label: "Fechado",
-    icon: CheckCircle,
-    color: "text-info",
-    activeBg: "bg-info/10 border-info/30",
-  },
-  {
-    value: "desqualified",
-    label: "Desqualificado",
-    icon: UserX,
-    color: "text-danger",
-    activeBg: "bg-danger/10 border-danger/30",
-  },
-];
 
 export default function ChatArea({
   conversationId,
@@ -257,11 +218,13 @@ export default function ChatArea({
     <div className="flex-1 flex h-screen bg-bg-primary">
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
-        <div className="border-b border-border bg-bg-secondary/50 backdrop-blur-sm px-4 py-2.5 shrink-0">
-          <div className="max-w-3xl mx-auto pl-10 lg:pl-0 flex items-center justify-between gap-3">
-            <div className="min-w-0">
+        <div className="border-b border-border bg-bg-secondary px-4 py-3 shrink-0">
+          <div className="max-w-5xl mx-auto pl-10 lg:pl-0 flex items-center gap-4">
+            <ClientAvatar name={displayName || ""} size="md" />
+
+            <div className="flex-1 min-w-0">
               {editingName ? (
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   <input
                     ref={nameInputRef}
                     type="text"
@@ -275,32 +238,32 @@ export default function ChatArea({
                       }
                     }}
                     onBlur={commitNameChange}
-                    className="bg-bg-primary border border-accent/40 rounded-lg px-2.5 py-1 text-sm font-semibold focus:outline-none focus:ring-1 focus:ring-accent/30 w-44 transition-all"
+                    className="bg-bg-primary border border-border-light rounded-lg px-3 py-1.5 text-sm font-medium focus:outline-none focus:border-text-muted w-48 transition-all"
                     placeholder="Nome do cliente"
                   />
                   <button
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={commitNameChange}
-                    className="w-6 h-6 rounded-md flex items-center justify-center text-accent hover:bg-accent/10 transition-colors shrink-0"
+                    className="w-7 h-7 rounded-lg flex items-center justify-center text-text-muted hover:text-text-primary hover:bg-bg-tertiary transition-colors shrink-0"
                   >
-                    <Check size={13} />
+                    <Check size={14} />
                   </button>
                 </div>
               ) : (
                 <button
                   onClick={() => setEditingName(true)}
-                  className="group flex items-center gap-1.5 hover:bg-bg-tertiary rounded-lg px-1.5 py-0.5 -ml-1.5 transition-colors"
+                  className="group flex items-center gap-2 hover:bg-bg-tertiary rounded-lg px-2 py-1 -ml-2 transition-colors"
                 >
-                  <p className="text-sm font-semibold truncate">
+                  <p className="text-sm font-bold truncate">
                     {displayName || "Sem nome"}
                   </p>
                   <Pencil
-                    size={11}
+                    size={12}
                     className="text-text-muted/0 group-hover:text-text-muted transition-colors shrink-0"
                   />
                 </button>
               )}
-              <p className="text-[11px] text-text-muted truncate">
+              <p className="text-xs text-text-muted truncate mt-0.5">
                 {productMatch ? (
                   <>
                     {productMatch.emoji} {productName}
@@ -308,47 +271,28 @@ export default function ChatArea({
                   </>
                 ) : (
                   <span className="text-text-muted/50 italic">
-                    Produto não definido
+                    Produto nao definido
                   </span>
                 )}
               </p>
             </div>
 
-            <div className="flex items-center gap-1.5 shrink-0">
-              {/* Status pills */}
-              {STATUS_OPTIONS.map((opt) => {
-                const Icon = opt.icon;
-                const isSelected = (status || "active") === opt.value;
-                return (
-                  <button
-                    key={opt.value}
-                    onClick={() => onStatusChange(conversationId, opt.value)}
-                    className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all border ${
-                      isSelected
-                        ? `${opt.activeBg} ${opt.color}`
-                        : "border-transparent text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
-                    }`}
-                  >
-                    <Icon size={11} />
-                    <span className="hidden sm:inline">{opt.label}</span>
-                  </button>
-                );
-              })}
+            <div className="flex items-center gap-2 shrink-0">
+              <StatusDropdown
+                value={status || "active"}
+                onChange={(s) => onStatusChange(conversationId, s)}
+              />
 
-              {/* Divider */}
-              <div className="w-px h-5 bg-border mx-1" />
-
-              {/* Analysis toggle */}
               <button
                 onClick={() => setShowAnalysis(!showAnalysis)}
-                className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-[10px] font-semibold transition-all border ${
+                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-medium transition-all border ${
                   showAnalysis
-                    ? "bg-info/10 border-info/30 text-info"
-                    : "border-transparent text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
+                    ? "bg-bg-tertiary border-border-light text-text-primary"
+                    : "border-border text-text-muted hover:text-text-secondary hover:border-border-light"
                 }`}
               >
-                <BarChart3 size={12} />
-                <span className="hidden sm:inline">Análise</span>
+                <BarChart3 size={13} />
+                <span className="hidden sm:inline">Analise</span>
               </button>
             </div>
           </div>
@@ -365,7 +309,7 @@ export default function ChatArea({
               onSend={handleStarterSend}
             />
           ) : (
-            <div className="max-w-3xl mx-auto px-4 py-4 space-y-3">
+            <div className="max-w-5xl mx-auto px-4 py-4 space-y-3">
               {messages.map((msg) => (
                 <ChatMessage
                   key={msg.id}
@@ -395,7 +339,7 @@ export default function ChatArea({
 
           {error && (
             <div className="px-4 pb-2">
-              <div className="max-w-3xl mx-auto">
+              <div className="max-w-5xl mx-auto">
                 <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5">
                   {error}
                 </p>

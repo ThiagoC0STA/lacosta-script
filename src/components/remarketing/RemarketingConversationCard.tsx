@@ -1,7 +1,8 @@
 "use client";
 
-import { MessageCircle, Loader2, ChevronRight, Sparkles } from "lucide-react";
+import { Loader2, ChevronRight, Sparkles } from "lucide-react";
 import { products } from "@/data/products";
+import ClientAvatar from "@/components/shared/ClientAvatar";
 import type { Conversation } from "@/types/database";
 
 interface RemarketingConversationCardProps {
@@ -44,15 +45,7 @@ export default function RemarketingConversationCard({
       }`}
     >
       <div className="flex items-start gap-3">
-        <div
-          className={`w-10 h-10 rounded-xl flex items-center justify-center shrink-0 transition-colors ${
-            isSelected
-              ? "bg-amber-400/15 text-amber-400"
-              : "bg-bg-tertiary text-text-muted group-hover:text-text-secondary"
-          }`}
-        >
-          <MessageCircle size={18} />
-        </div>
+        <ClientAvatar name={conversation.client_name || ""} size="md" />
 
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
@@ -61,23 +54,23 @@ export default function RemarketingConversationCard({
             </p>
             {hasAnalysis && score !== null && (
               <span
-                className={`text-[10px] font-bold px-2 py-0.5 rounded-full border shrink-0 ${scoreColor}`}
+                className={`text-[11px] font-bold px-2.5 py-0.5 rounded-full border shrink-0 ${scoreColor}`}
               >
                 {score}/10
               </span>
             )}
           </div>
 
-          <div className="flex items-center gap-2 mt-0.5">
-            <p className="text-[11px] text-text-muted truncate">
+          <div className="flex items-center gap-2 mt-1">
+            <p className="text-xs text-text-muted truncate">
               {product?.emoji} {product?.name}
             </p>
             <span className="text-text-muted/30">·</span>
-            <p className="text-[11px] text-text-muted">
+            <p className="text-xs text-text-muted">
               {messageCount} {messageCount === 1 ? "msg" : "msgs"}
             </p>
             <span className="text-text-muted/30">·</span>
-            <p className="text-[11px] text-text-muted">{timeSince}</p>
+            <p className="text-xs text-text-muted">{timeSince}</p>
           </div>
         </div>
 

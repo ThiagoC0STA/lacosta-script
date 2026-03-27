@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Pencil, Copy, Sparkles, Send } from "lucide-react";
+import { Check, Pencil, Copy, Send } from "lucide-react";
 import { motion } from "framer-motion";
 import AiRefineInput from "@/components/shared/AiRefineInput";
 
@@ -40,45 +40,42 @@ export default function VersionSelector({
 
   return (
     <div className="px-4 py-3">
-      <div className="max-w-3xl mx-auto">
-        <div className="flex items-center gap-2 mb-3">
-          <Sparkles size={13} className="text-accent" />
-          <p className="text-xs font-medium text-accent">
-            {versions.length} versões geradas — escolha ou edite
-          </p>
-        </div>
+      <div className="max-w-5xl mx-auto">
+        <p className="text-xs text-text-muted mb-3">
+          {versions.length} opcoes geradas pela IA
+        </p>
 
         <div className="space-y-2">
           {versions.map((version, idx) => (
             <motion.div
               key={idx}
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: idx * 0.05 }}
-              className="bg-bg-secondary border border-border rounded-xl overflow-hidden hover:border-border-light transition-colors"
+              transition={{ delay: idx * 0.04 }}
+              className="bg-bg-secondary border border-border rounded-lg overflow-hidden hover:border-border-light transition-all"
             >
-              <div className="flex items-center justify-between px-3.5 py-2 border-b border-border/50">
-                <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
-                  v{idx + 1}
+              <div className="flex items-center justify-between px-3.5 py-2 border-b border-border">
+                <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">
+                  Opcao {idx + 1}
                 </span>
-                <div className="flex items-center gap-1">
+                <div className="flex items-center gap-0.5">
                   <button
                     onClick={() => handleCopy(editingIdx === idx ? editValue : version, idx)}
-                    className={`p-1.5 rounded-lg transition-colors ${
+                    className={`p-1.5 rounded text-text-muted transition-colors ${
                       copiedIdx === idx
-                        ? "text-accent bg-accent/10"
-                        : "text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
+                        ? "text-emerald-400"
+                        : "hover:text-text-secondary hover:bg-bg-tertiary"
                     }`}
                   >
-                    <Copy size={12} />
+                    {copiedIdx === idx ? <Check size={12} /> : <Copy size={12} />}
                   </button>
                   <button
                     onClick={() =>
                       editingIdx === idx ? setEditingIdx(null) : handleEdit(idx)
                     }
-                    className={`p-1.5 rounded-lg transition-colors ${
+                    className={`p-1.5 rounded transition-colors ${
                       editingIdx === idx
-                        ? "text-accent bg-accent/10"
+                        ? "text-text-primary bg-bg-tertiary"
                         : "text-text-muted hover:text-text-secondary hover:bg-bg-tertiary"
                     }`}
                   >
@@ -86,9 +83,9 @@ export default function VersionSelector({
                   </button>
                   <button
                     onClick={() => handleSelect(idx)}
-                    className="flex items-center gap-1 px-2.5 py-1 rounded-lg bg-accent/10 text-accent text-[10px] font-semibold hover:bg-accent/20 transition-colors"
+                    className="flex items-center gap-1 px-2.5 py-1 rounded text-text-primary bg-bg-tertiary text-[10px] font-medium hover:bg-border transition-colors ml-0.5"
                   >
-                    <Check size={11} />
+                    <Check size={10} />
                     Usar
                   </button>
                 </div>
@@ -100,11 +97,11 @@ export default function VersionSelector({
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     rows={5}
-                    className="w-full bg-bg-primary border border-accent/20 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-accent/20 resize-none leading-relaxed"
+                    className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-border-light resize-none leading-relaxed"
                     autoFocus
                   />
                 ) : (
-                  <p className="text-[13px] text-text-secondary whitespace-pre-line leading-relaxed">
+                  <p className="text-sm text-text-secondary whitespace-pre-line leading-relaxed">
                     {version}
                   </p>
                 )}
@@ -112,15 +109,15 @@ export default function VersionSelector({
             </motion.div>
           ))}
 
-          {/* Custom message input */}
+          {/* Custom message */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
+            initial={{ opacity: 0, y: 6 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: versions.length * 0.05 }}
-            className="bg-bg-secondary border border-dashed border-border rounded-xl overflow-hidden hover:border-border-light transition-colors"
+            transition={{ delay: versions.length * 0.04 }}
+            className="bg-bg-secondary border border-dashed border-border rounded-lg overflow-hidden"
           >
             <div className="px-3.5 py-2 border-b border-border/50">
-              <span className="text-[10px] font-semibold text-text-muted uppercase tracking-wider">
+              <span className="text-[10px] font-medium text-text-muted uppercase tracking-wider">
                 Sua mensagem
               </span>
             </div>
@@ -129,18 +126,18 @@ export default function VersionSelector({
                 value={customMsg}
                 onChange={(e) => setCustomMsg(e.target.value)}
                 rows={3}
-                placeholder="Escreva sua própria mensagem..."
-                className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-accent/40 focus:ring-1 focus:ring-accent/20 resize-none leading-relaxed placeholder:text-text-muted/40 transition-all"
+                placeholder="Escreva sua propria mensagem..."
+                className="w-full bg-bg-primary border border-border rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-border-light resize-none leading-relaxed placeholder:text-text-muted/30 transition-all"
               />
               <button
                 onClick={() => {
                   if (customMsg.trim()) onSelect(customMsg.trim());
                 }}
                 disabled={!customMsg.trim()}
-                className="mt-2 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-accent/10 text-accent text-[11px] font-semibold hover:bg-accent/20 transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+                className="mt-2 flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-bg-tertiary border border-border text-text-secondary text-xs font-medium hover:border-border-light transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               >
-                <Send size={12} />
-                Enviar minha mensagem
+                <Send size={11} />
+                Enviar
               </button>
             </div>
           </motion.div>
@@ -148,14 +145,14 @@ export default function VersionSelector({
           {/* Refine AI input */}
           {onRefine && (
             <motion.div
-              initial={{ opacity: 0, y: 8 }}
+              initial={{ opacity: 0, y: 6 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: (versions.length + 1) * 0.05 }}
+              transition={{ delay: (versions.length + 1) * 0.04 }}
             >
               <AiRefineInput
                 onSubmit={onRefine}
                 isLoading={isRefining}
-                placeholder="Ex: mude o tom, seja mais direto, adicione o preço..."
+                placeholder="Ex: mude o tom, seja mais direto, adicione o preco..."
               />
             </motion.div>
           )}
