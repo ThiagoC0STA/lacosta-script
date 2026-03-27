@@ -51,6 +51,7 @@ interface RequestBody {
   messages: ChatMessage[];
   productType: string;
   clientName: string;
+  refinement?: string;
 }
 
 export async function POST(request: NextRequest) {
@@ -63,7 +64,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body: RequestBody = await request.json();
-    const { messages, productType, clientName } = body;
+    const { messages, productType, clientName, refinement } = body;
 
     const learnings = await getLearnings();
 
@@ -100,6 +101,16 @@ export async function POST(request: NextRequest) {
       content:
         "Agora gere as versões de resposta para o vendedor enviar ao cliente. Responda APENAS o JSON no formato especificado.",
     });
+
+    if (refinement) {
+      openaiMessages.push({
+        role: "user",
+        content: `ATENÇÃO - INSTRUÇÃO OBRIGATÓRIA DO VENDEDOR (prioridade máxima):
+"${refinement}"
+
+Você DEVE obedecer essa instrução ao gerar as versões. Releia toda a conversa acima e gere versões que respeitem 100% essa instrução. Responda o JSON completo.`,
+      });
+    }
 
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",

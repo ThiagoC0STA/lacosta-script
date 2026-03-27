@@ -3,15 +3,20 @@
 import { useState } from "react";
 import { Check, Pencil, Copy, Sparkles, Send } from "lucide-react";
 import { motion } from "framer-motion";
+import AiRefineInput from "@/components/shared/AiRefineInput";
 
 interface VersionSelectorProps {
   versions: string[];
   onSelect: (message: string) => void;
+  onRefine?: (instruction: string) => void;
+  isRefining?: boolean;
 }
 
 export default function VersionSelector({
   versions,
   onSelect,
+  onRefine,
+  isRefining,
 }: VersionSelectorProps) {
   const [editingIdx, setEditingIdx] = useState<number | null>(null);
   const [editValue, setEditValue] = useState("");
@@ -139,6 +144,21 @@ export default function VersionSelector({
               </button>
             </div>
           </motion.div>
+
+          {/* Refine AI input */}
+          {onRefine && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: (versions.length + 1) * 0.05 }}
+            >
+              <AiRefineInput
+                onSubmit={onRefine}
+                isLoading={isRefining}
+                placeholder="Ex: mude o tom, seja mais direto, adicione o preço..."
+              />
+            </motion.div>
+          )}
         </div>
       </div>
     </div>

@@ -60,7 +60,9 @@ MENSAGENS DE REABORDAGEM:
 - Devem ser naturais, como pessoa real
 - Cada uma com abordagem diferente
 - Use \\n para quebras de linha
-- Considere o contexto da conversa anterior
+- ANALISE PROFUNDAMENTE o que já foi dito na conversa. Se o vendedor já explicou o produto, valores, condições, etc., NUNCA gere mensagens que repitam essas informações ou perguntem se o cliente quer saber mais sobre algo que já foi discutido. As mensagens devem avançar a conversa, não voltar ao início.
+- NUNCA gere mensagens genéricas como "quer saber mais sobre consórcio" se o vendedor já apresentou o consórcio. Presuma que o cliente já sabe o que é o produto.
+- Foque no que faltou: objeções não tratadas, gatilhos emocionais, novidades, condições especiais, ou retomar de onde parou.
 
 REGRAS:
 - remarketing_score >= 7 = lead quente, reabordar com prioridade
@@ -85,10 +87,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { messages, productType, clientName } = (await request.json()) as {
+    const { messages, productType, clientName, refinement } = (await request.json()) as {
       messages: ChatMessage[];
       productType: string;
       clientName: string;
+      refinement?: string;
     };
 
     if (!messages || messages.length === 0) {
@@ -102,15 +105,26 @@ export async function POST(request: NextRequest) {
       .map((m) => `${m.role === "client" ? "CLIENTE" : "VENDEDOR"}: ${m.content}`)
       .join("\n\n");
 
+    const userContent = `Cliente: ${clientName || "não informado"}\nProduto: ${productType || "não informado"}\nTotal de mensagens: ${messages.length}\n\n--- CONVERSA COMPLETA ---\n${conversationText}`;
+
+    const apiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
+      { role: "system", content: REMARKETING_PROMPT },
+      { role: "user", content: userContent },
+    ];
+
+    if (refinement) {
+      apiMessages.push({
+        role: "user",
+        content: `ATENÇÃO - INSTRUÇÃO OBRIGATÓRIA DO VENDEDOR (prioridade máxima, acima de tudo):
+"${refinement}"
+
+Você DEVE obedecer essa instrução. Releia a conversa completa acima e gere uma análise e mensagens que respeitem 100% essa instrução. Se o vendedor diz que já falou sobre algo, NÃO repita. Se pede um tom específico, USE esse tom. Responda o JSON completo aplicando essa instrução.`,
+      });
+    }
+
     const completion = await openai.chat.completions.create({
       model: "gpt-4o-mini",
-      messages: [
-        { role: "system", content: REMARKETING_PROMPT },
-        {
-          role: "user",
-          content: `Cliente: ${clientName || "não informado"}\nProduto: ${productType || "não informado"}\nTotal de mensagens: ${messages.length}\n\n--- CONVERSA COMPLETA ---\n${conversationText}`,
-        },
-      ],
+      messages: apiMessages,
       response_format: { type: "json_object" },
       temperature: 0.5,
       max_tokens: 3000,

@@ -246,7 +246,7 @@ export default function ChatSidebar({
         <Menu size={16} />
       </button>
 
-      <aside className="hidden lg:flex w-90 border-r border-border flex-col h-screen shrink-0">
+      <aside className="hidden lg:flex w-110 border-r border-border flex-col h-screen shrink-0">
         {sidebarContent}
       </aside>
 

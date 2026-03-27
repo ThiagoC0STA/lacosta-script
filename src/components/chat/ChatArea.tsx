@@ -82,6 +82,7 @@ export default function ChatArea({
   const [messages, setMessages] = useState<Message[]>([]);
   const [aiResponse, setAiResponse] = useState<AiResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [isRefining, setIsRefining] = useState(false);
   const [creditValue, setCreditValue] = useState("");
   const [error, setError] = useState("");
   const [showAnalysis, setShowAnalysis] = useState(false);
@@ -182,9 +183,14 @@ export default function ChatArea({
     return data as Message;
   };
 
-  const callAI = async (allMessages: Message[]) => {
-    setIsLoading(true);
-    setAiResponse(null);
+  const callAI = async (allMessages: Message[], refinement?: string) => {
+    const refining = !!refinement;
+    if (refining) {
+      setIsRefining(true);
+    } else {
+      setIsLoading(true);
+      setAiResponse(null);
+    }
     setError("");
 
     try {
@@ -198,6 +204,7 @@ export default function ChatArea({
           })),
           productType: productName,
           clientName: displayName,
+          refinement,
         }),
       });
 
@@ -211,7 +218,12 @@ export default function ChatArea({
       setError("Erro de conexão com a IA");
     } finally {
       setIsLoading(false);
+      setIsRefining(false);
     }
+  };
+
+  const handleRefine = (instruction: string) => {
+    callAI(messages, instruction);
   };
 
   const handleStarterSend = async (message: string) => {
@@ -375,6 +387,8 @@ export default function ChatArea({
               <VersionSelector
                 versions={aiResponse.versions}
                 onSelect={handleVersionSelect}
+                onRefine={handleRefine}
+                isRefining={isRefining}
               />
             </>
           )}

@@ -128,18 +128,13 @@ export default function HomePage() {
       return;
     }
 
-    // Fallback for databases that still don't accept the new enum value.
-    if (newStatus === "desqualified") {
-      const overrides = readStatusOverrides();
-      overrides[id] = "desqualified";
-      writeStatusOverrides(overrides);
-      setConversations((prev) =>
-        prev.map((c) => (c.id === id ? { ...c, status: "desqualified" } : c))
-      );
-      return;
-    }
-
-    alert(`Não foi possível salvar o status: ${error.message}`);
+    // Fallback to localStorage when the DB column doesn't exist yet
+    const overrides = readStatusOverrides();
+    overrides[id] = newStatus;
+    writeStatusOverrides(overrides);
+    setConversations((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, status: newStatus } : c))
+    );
   };
 
   const handleClientNameChange = async (id: string, newName: string) => {
