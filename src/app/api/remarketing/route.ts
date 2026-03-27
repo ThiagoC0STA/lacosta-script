@@ -1,7 +1,92 @@
 import { NextRequest, NextResponse } from "next/server";
 import OpenAI from "openai";
+import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
 
 const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
+
+async function getLearnings(): Promise<string[]> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {},
+        },
+      }
+    );
+
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data } = await supabase
+      .from("ai_learnings")
+      .select("insight")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    return data?.map((r) => r.insight as string) || [];
+  } catch {
+    return [];
+  }
+}
+
+async function getRules(): Promise<string[]> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {},
+        },
+      }
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const { data: withActive, error: withActiveError } = await supabase
+      .from("ai_rules")
+      .select("rule,is_active")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+
+    if (!withActiveError && withActive) {
+      return withActive
+        .filter((r) => (typeof r.is_active === "boolean" ? r.is_active : true))
+        .map((r) => r.rule as string);
+    }
+
+    if (withActiveError && withActiveError.message.toLowerCase().includes("is_active")) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("ai_rules")
+        .select("rule")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (fallbackError || !fallbackData) return [];
+      return fallbackData.map((r) => r.rule as string);
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
 
 const REMARKETING_PROMPT = `Você é um especialista em remarketing e análise de vendas de consórcio (Servopa/Rodobens, La Costa Consórcios). Sua função é analisar uma conversa entre vendedor e cliente que NÃO fechou negócio e determinar se vale a pena reabordar esse cliente.
 
@@ -105,12 +190,28 @@ export async function POST(request: NextRequest) {
       .map((m) => `${m.role === "client" ? "CLIENTE" : "VENDEDOR"}: ${m.content}`)
       .join("\n\n");
 
-    const userContent = `Cliente: ${clientName || "não informado"}\nProduto: ${productType || "não informado"}\nTotal de mensagens: ${messages.length}\n\n--- CONVERSA COMPLETA ---\n${conversationText}`;
+    const [learnings, rules] = await Promise.all([getLearnings(), getRules()]);
+    let userContent = `Cliente: ${clientName || "não informado"}\nProduto: ${productType || "não informado"}\nTotal de mensagens: ${messages.length}`;
+
+    if (learnings.length > 0) {
+      userContent += `\n\nAPRENDIZADOS DO VENDEDOR (aplique na analise e mensagens):\n${learnings.map((l, i) => `${i + 1}. ${l}`).join("\n")}`;
+    }
+
+    userContent += `\n\n--- CONVERSA COMPLETA ---\n${conversationText}`;
 
     const apiMessages: OpenAI.Chat.ChatCompletionMessageParam[] = [
       { role: "system", content: REMARKETING_PROMPT },
       { role: "user", content: userContent },
     ];
+
+    if (rules.length > 0) {
+      apiMessages.push({
+        role: "system",
+        content: `REGRAS CUSTOMIZADAS DO VENDEDOR (prioridade alta):\n${rules
+          .map((r, i) => `${i + 1}. ${r}`)
+          .join("\n")}`,
+      });
+    }
 
     if (refinement) {
       apiMessages.push({

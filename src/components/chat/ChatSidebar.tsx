@@ -13,6 +13,7 @@ import {
   Search,
   Filter,
   ChevronDown,
+  Brain,
 } from "lucide-react";
 import { products } from "@/data/products";
 import type { Conversation, ConversationStatus } from "@/types/database";
@@ -32,6 +33,20 @@ const STATUS_DOT: Record<ConversationStatus, string> = {
   remarketing: "bg-amber-400",
   closed: "bg-blue-400",
   desqualified: "bg-red-400",
+};
+
+const STATUS_ACCENT: Record<ConversationStatus, string> = {
+  active: "before:bg-emerald-400/80",
+  remarketing: "before:bg-amber-400/80",
+  closed: "before:bg-blue-400/80",
+  desqualified: "before:bg-red-400/80",
+};
+
+const STATUS_BADGE: Record<ConversationStatus, string> = {
+  active: "text-emerald-300 bg-emerald-400/10 border-emerald-400/20",
+  remarketing: "text-amber-300 bg-amber-400/10 border-amber-400/20",
+  closed: "text-blue-300 bg-blue-400/10 border-blue-400/20",
+  desqualified: "text-red-300 bg-red-400/10 border-red-400/20",
 };
 
 const FILTER_LABELS: Record<ConversationStatus | "all", string> = {
@@ -108,14 +123,14 @@ export default function ChatSidebar({
   const sidebarContent = (
     <div className="flex flex-col h-full bg-bg-secondary">
       {/* Header */}
-      <div className="px-4 pt-5 pb-4 flex items-center justify-between">
+      <div className="px-4 pt-5 pb-4 flex items-center justify-between border-b border-border/70">
         <div className="flex items-center gap-3">
           <div className="w-8 h-8 rounded-lg bg-bg-tertiary border border-border flex items-center justify-center">
             <span className="text-[10px] font-bold text-text-secondary">LC</span>
           </div>
           <div>
-            <p className="text-sm font-semibold">La Costa</p>
-            <p className="text-[10px] text-text-muted">Script de Vendas</p>
+            <p className="text-sm font-semibold tracking-tight">La Costa</p>
+            <p className="text-[10px] text-text-muted uppercase tracking-wider">Sales Copilot</p>
           </div>
         </div>
         <button
@@ -127,13 +142,13 @@ export default function ChatSidebar({
       </div>
 
       {/* New conversation */}
-      <div className="px-3 pb-3">
+      <div className="px-3 pt-3 pb-3">
         <button
           onClick={() => {
             onNewClick();
             setMobileOpen(false);
           }}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium text-text-primary bg-bg-tertiary border border-border hover:border-border-light transition-all"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-xs font-medium text-bg-primary bg-text-primary border border-transparent hover:opacity-90 transition-all"
         >
           <Plus size={14} />
           Nova conversa
@@ -148,7 +163,7 @@ export default function ChatSidebar({
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Buscar..."
-            className="w-full bg-bg-primary border border-border rounded-lg pl-8 pr-3 py-2 text-xs focus:outline-none focus:border-border-light placeholder:text-text-muted/30 transition-all"
+            className="w-full bg-bg-primary/70 border border-border rounded-lg pl-8 pr-3 py-2 text-xs focus:outline-none focus:border-border-light placeholder:text-text-muted/30 transition-all"
           />
         </div>
 
@@ -209,10 +224,10 @@ export default function ChatSidebar({
         </div>
       )}
 
-      <div className="h-px bg-border mx-3" />
+      <div className="h-px bg-border/70 mx-3 mt-1" />
 
       {/* Conversations list */}
-      <div className="flex-1 overflow-y-auto px-3 py-2 space-y-0.5">
+      <div className="flex-1 overflow-y-auto px-3 py-3 space-y-2">
         {filtered.length === 0 && (
           <p className="text-xs text-text-muted/40 text-center py-10">
             {search ? "Nenhum resultado" : filter === "all" ? "Nenhuma conversa" : "Nenhuma nesse filtro"}
@@ -225,10 +240,12 @@ export default function ChatSidebar({
           return (
             <div
               key={conv.id}
-              className={`group flex items-center gap-3 px-3 py-2.5 rounded-lg cursor-pointer transition-all ${
+              className={`group relative flex items-center gap-3 px-3 py-3 rounded-xl cursor-pointer transition-all border before:absolute before:left-0 before:top-2 before:bottom-2 before:w-[2px] before:rounded-full ${
+                STATUS_ACCENT[status]
+              } ${
                 isActive
-                  ? "bg-bg-tertiary"
-                  : "hover:bg-bg-tertiary/50"
+                  ? "bg-bg-tertiary border-border-light shadow-[0_0_0_1px_rgba(255,255,255,0.03)]"
+                  : "bg-bg-primary/30 border-border/80 hover:bg-bg-tertiary/60 hover:border-border-light"
               }`}
               onClick={() => {
                 onSelect(conv.id);
@@ -236,7 +253,7 @@ export default function ChatSidebar({
               }}
             >
               {/* Initials avatar */}
-              <div className="w-8 h-8 rounded-lg bg-bg-primary border border-border flex items-center justify-center shrink-0">
+              <div className="w-8 h-8 rounded-lg bg-bg-primary border border-border/80 flex items-center justify-center shrink-0">
                 <span className="text-[10px] font-semibold text-text-muted">
                   {getInitials(conv.client_name || "")}
                 </span>
@@ -247,9 +264,7 @@ export default function ChatSidebar({
                   <p className="text-xs font-medium truncate text-text-primary">
                     {conv.client_name || "Sem nome"}
                   </p>
-                  {status !== "active" && (
-                    <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />
-                  )}
+                  {status !== "active" && <span className={`shrink-0 w-1.5 h-1.5 rounded-full ${STATUS_DOT[status]}`} />}
                 </div>
                 <div className="flex items-center gap-1.5 mt-0.5">
                   <p className="text-[10px] text-text-muted truncate">
@@ -262,22 +277,27 @@ export default function ChatSidebar({
                 </div>
               </div>
 
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  onDelete(conv.id);
-                }}
-                className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-400 transition-all p-1 rounded shrink-0"
-              >
-                <Trash2 size={12} />
-              </button>
+              <div className="flex flex-col items-end gap-1 shrink-0">
+                <span className={`px-1.5 py-0.5 rounded-md border text-[9px] uppercase tracking-wider ${STATUS_BADGE[status]}`}>
+                  {FILTER_LABELS[status]}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(conv.id);
+                  }}
+                  className="opacity-0 group-hover:opacity-100 text-text-muted hover:text-red-400 transition-all p-1 rounded"
+                >
+                  <Trash2 size={12} />
+                </button>
+              </div>
             </div>
           );
         })}
       </div>
 
       {/* Footer */}
-      <div className="p-3 border-t border-border space-y-1.5">
+      <div className="p-3 border-t border-border/70 space-y-1.5">
         <button
           onClick={() => {
             onImportClick();
@@ -300,6 +320,14 @@ export default function ChatSidebar({
               {remarketingCount}
             </span>
           )}
+        </button>
+
+        <button
+          onClick={() => router.push("/learnings")}
+          className="w-full flex items-center gap-2.5 px-3 py-2.5 rounded-lg text-xs text-text-secondary border border-border hover:border-border-light hover:bg-bg-tertiary/50 transition-all"
+        >
+          <Brain size={13} />
+          Aprendizados da IA
         </button>
 
         <button

@@ -26,16 +26,28 @@ function isMissingColumn(errorMessage: string, column: string) {
 export async function GET() {
   try {
     const supabase = await getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { data, error } = await supabase
-      .from("ai_learnings")
+    let { data, error } = await supabase
+      .from("ai_rules")
       .select("*")
       .eq("user_id", user.id)
       .order("created_at", { ascending: false });
+
+    // Backward-compatible fetch when table has no created_at.
+    if (error && isMissingColumn(error.message, "created_at")) {
+      const retry = await supabase
+        .from("ai_rules")
+        .select("*")
+        .eq("user_id", user.id);
+      data = retry.data;
+      error = retry.error;
+    }
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
@@ -51,27 +63,35 @@ export async function GET() {
 export async function POST(request: NextRequest) {
   try {
     const supabase = await getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { insight, category } = await request.json();
-    if (!insight?.trim()) {
-      return NextResponse.json({ error: "Insight is required" }, { status: 400 });
+    const { rule, is_active } = await request.json();
+    if (!rule?.trim()) {
+      return NextResponse.json({ error: "Rule is required" }, { status: 400 });
     }
 
     let { data, error } = await supabase
-      .from("ai_learnings")
-      .insert({ user_id: user.id, insight: insight.trim(), category: category || "general" })
+      .from("ai_rules")
+      .insert({
+        user_id: user.id,
+        rule: rule.trim(),
+        is_active: is_active ?? true,
+      })
       .select()
       .single();
 
-    // Backward-compatible insert when table exists without "category" column.
-    if (error && isMissingColumn(error.message, "category")) {
+    if (error && isMissingColumn(error.message, "is_active")) {
       const retry = await supabase
-        .from("ai_learnings")
-        .insert({ user_id: user.id, insight: insight.trim() })
+        .from("ai_rules")
+        .insert({
+          user_id: user.id,
+          rule: rule.trim(),
+        })
         .select()
         .single();
       data = retry.data;
@@ -92,21 +112,26 @@ export async function POST(request: NextRequest) {
 export async function PUT(request: NextRequest) {
   try {
     const supabase = await getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
 
-    const { id, insight, category } = await request.json();
-    if (!id || !insight?.trim()) {
-      return NextResponse.json({ error: "ID and insight are required" }, { status: 400 });
+    const { id, rule, is_active } = await request.json();
+    if (!id || !rule?.trim()) {
+      return NextResponse.json(
+        { error: "ID and rule are required" },
+        { status: 400 }
+      );
     }
 
     let { data, error } = await supabase
-      .from("ai_learnings")
+      .from("ai_rules")
       .update({
-        insight: insight.trim(),
-        category: category || "general",
+        rule: rule.trim(),
+        is_active: is_active ?? true,
         updated_at: new Date().toISOString(),
       })
       .eq("id", id)
@@ -114,15 +139,14 @@ export async function PUT(request: NextRequest) {
       .select()
       .single();
 
-    // Backward-compatible update when table exists without category/updated_at.
     if (
       error &&
-      (isMissingColumn(error.message, "category") ||
+      (isMissingColumn(error.message, "is_active") ||
         isMissingColumn(error.message, "updated_at"))
     ) {
       const retry = await supabase
-        .from("ai_learnings")
-        .update({ insight: insight.trim() })
+        .from("ai_rules")
+        .update({ rule: rule.trim() })
         .eq("id", id)
         .eq("user_id", user.id)
         .select()
@@ -145,7 +169,9 @@ export async function PUT(request: NextRequest) {
 export async function DELETE(request: NextRequest) {
   try {
     const supabase = await getSupabase();
-    const { data: { user } } = await supabase.auth.getUser();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
     if (!user) {
       return NextResponse.json({ error: "Not authenticated" }, { status: 401 });
     }
@@ -156,7 +182,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { error } = await supabase
-      .from("ai_learnings")
+      .from("ai_rules")
       .delete()
       .eq("id", id)
       .eq("user_id", user.id);

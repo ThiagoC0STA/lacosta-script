@@ -40,7 +40,7 @@ export default function VersionSelector({
 
   return (
     <div className="px-4 py-3">
-      <div className="max-w-5xl mx-auto">
+      <div className="max-w-6xl mx-auto">
         <p className="text-xs text-text-muted mb-3">
           {versions.length} opcoes geradas pela IA
         </p>

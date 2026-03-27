@@ -45,6 +45,7 @@ export default function ChatArea({
   const [isLoading, setIsLoading] = useState(false);
   const [isRefining, setIsRefining] = useState(false);
   const [creditValue, setCreditValue] = useState("");
+  const [parcelaValue, setParcelaValue] = useState("");
   const [error, setError] = useState("");
   const [showAnalysis, setShowAnalysis] = useState(false);
   const [editingName, setEditingName] = useState(false);
@@ -94,6 +95,7 @@ export default function ChatArea({
     setAiResponse(null);
     setError("");
     setShowAnalysis(false);
+    autoTriggeredRef.current = false;
 
     supabase
       .from("messages")
@@ -115,6 +117,8 @@ export default function ChatArea({
 
   useEffect(() => {
     if (!autoTriggerAI || messages.length === 0 || autoTriggeredRef.current) return;
+    const lastMsg = messages[messages.length - 1];
+    if (lastMsg?.role !== "client") return;
     autoTriggeredRef.current = true;
 
     const doTrigger = async () => {
@@ -145,6 +149,9 @@ export default function ChatArea({
   };
 
   const callAI = async (allMessages: Message[], refinement?: string) => {
+    const lastMsg = allMessages[allMessages.length - 1];
+    if (!refinement && lastMsg?.role !== "client") return;
+
     const refining = !!refinement;
     if (refining) {
       setIsRefining(true);
@@ -219,7 +226,7 @@ export default function ChatArea({
       <div className="flex-1 flex flex-col min-w-0">
         {/* Header */}
         <div className="border-b border-border bg-bg-secondary px-4 py-3 shrink-0">
-          <div className="max-w-5xl mx-auto pl-10 lg:pl-0 flex items-center gap-4">
+          <div className="max-w-6xl mx-auto pl-10 lg:pl-0 flex items-center gap-4">
             <ClientAvatar name={displayName || ""} size="md" />
 
             <div className="flex-1 min-w-0">
@@ -268,6 +275,7 @@ export default function ChatArea({
                   <>
                     {productMatch.emoji} {productName}
                     {creditValue && ` · ${creditValue}`}
+                    {parcelaValue && ` · Parcela ${parcelaValue}`}
                   </>
                 ) : (
                   <span className="text-text-muted/50 italic">
@@ -305,11 +313,13 @@ export default function ChatArea({
               clientName={displayName}
               productType={productName}
               creditValue={creditValue}
+              parcelaValue={parcelaValue}
               onCreditChange={setCreditValue}
+              onParcelaChange={setParcelaValue}
               onSend={handleStarterSend}
             />
           ) : (
-            <div className="max-w-5xl mx-auto px-4 py-4 space-y-3">
+            <div className="max-w-6xl mx-auto px-4 py-4 space-y-3">
               {messages.map((msg) => (
                 <ChatMessage
                   key={msg.id}
@@ -339,7 +349,7 @@ export default function ChatArea({
 
           {error && (
             <div className="px-4 pb-2">
-              <div className="max-w-5xl mx-auto">
+              <div className="max-w-6xl mx-auto">
                 <p className="text-xs text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5">
                   {error}
                 </p>

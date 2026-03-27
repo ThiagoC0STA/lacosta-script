@@ -42,6 +42,58 @@ async function getLearnings(): Promise<string[]> {
   }
 }
 
+async function getRules(): Promise<string[]> {
+  try {
+    const cookieStore = await cookies();
+    const supabase = createServerClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_DEFAULT_KEY!,
+      {
+        cookies: {
+          getAll() {
+            return cookieStore.getAll();
+          },
+          setAll() {},
+        },
+      }
+    );
+
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return [];
+
+    const query = supabase
+      .from("ai_rules")
+      .select("rule,is_active")
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: false })
+      .limit(30);
+    const { data: withActive, error: withActiveError } = await query;
+
+    if (!withActiveError && withActive) {
+      return withActive
+        .filter((r) => (typeof r.is_active === "boolean" ? r.is_active : true))
+        .map((r) => r.rule as string);
+    }
+
+    if (withActiveError && withActiveError.message.toLowerCase().includes("is_active")) {
+      const { data: fallbackData, error: fallbackError } = await supabase
+        .from("ai_rules")
+        .select("rule")
+        .eq("user_id", user.id)
+        .order("created_at", { ascending: false })
+        .limit(30);
+      if (fallbackError || !fallbackData) return [];
+      return fallbackData.map((r) => r.rule as string);
+    }
+
+    return [];
+  } catch {
+    return [];
+  }
+}
+
 interface ChatMessage {
   role: "client" | "seller";
   content: string;
@@ -66,7 +118,7 @@ export async function POST(request: NextRequest) {
     const body: RequestBody = await request.json();
     const { messages, productType, clientName, refinement } = body;
 
-    const learnings = await getLearnings();
+    const [learnings, rules] = await Promise.all([getLearnings(), getRules()]);
 
     let contextMessage = `Contexto atual:
 - Nome do cliente: ${clientName || "não informado"}
@@ -81,6 +133,15 @@ export async function POST(request: NextRequest) {
       { role: "system", content: SYSTEM_PROMPT },
       { role: "user", content: contextMessage },
     ];
+
+    if (rules.length > 0) {
+      openaiMessages.push({
+        role: "system",
+        content: `REGRAS CUSTOMIZADAS DO VENDEDOR (prioridade alta):\n${rules
+          .map((r, i) => `${i + 1}. ${r}`)
+          .join("\n")}`,
+      });
+    }
 
     for (const msg of messages) {
       if (msg.role === "client") {
